@@ -46,16 +46,14 @@ class PrematriculaController extends Controller
         ]);
     }
 
-    // Modalidades asignadas al docente
     /** @var \App\Models\User $usuario */
-$usuario = Auth::user();
+    $usuario = Auth::user();
 
-if ($usuario->esAdmin()) {
-    // El admin ve todas las modalidades activas automáticamente
-    $modalidades = \App\Models\Modalidad::where('activa', true)->get();
-} else {
-    $modalidades = $usuario->modalidades()->where('activa', true)->get();
-}
+    if ($usuario->esAdmin()) {
+        $modalidades = \App\Models\Modalidad::where('activa', true)->get();
+    } else {
+        $modalidades = $usuario->modalidades()->where('activa', true)->get();
+    }
 
     if ($modalidades->isEmpty()) {
         return view('prematricula.cerrado', [
@@ -63,7 +61,6 @@ if ($usuario->esAdmin()) {
         ]);
     }
 
-    // Si el docente tiene varias modalidades, debe elegir una
     $modalidadId = $request->get('modalidad_id');
     if (!$modalidadId && $modalidades->count() === 1) {
         $modalidadId = $modalidades->first()->id;
@@ -80,78 +77,90 @@ if ($usuario->esAdmin()) {
         ]);
     }
 
-$esNocturna = $modalidad->nombre !== 'Diurna';
+    $esNocturna     = $modalidad->nombre === 'Nocturna';
+    $esPlanNacional = $modalidad->nombre === 'Plan Nacional';
+    $esDiurna       = $modalidad->nombre === 'Diurna';
 
-$niveles = Nivel::with([
-    'secciones' => function($q) {
-        $q->where('activa', true)->orderBy('numero');
-    },
-    'secciones.talleres',
-    'carreras' => function($q) {
-        $q->where('activa', true)->orderBy('nombre');
-    },
-])->where('activo', true)
-  ->where('modalidad_id', $modalidad->id)
-  ->get();
+    $niveles = Nivel::with([
+        'secciones' => function($q) {
+            $q->where('activa', true)->orderBy('numero');
+        },
+        'secciones.talleres',
+        'carreras' => function($q) {
+            $q->where('activa', true)->orderBy('nombre');
+        },
+    ])->where('activo', true)
+      ->where('modalidad_id', $modalidad->id)
+      ->get();
 
-$nivelesJs = $niveles->map(function($n) use ($esNocturna) {
-    if ($esNocturna) {
-        $carreras = $n->carreras->where('activa', true)->values()->map(function($c) {
-            return [
-                'id'      => $c->id,
-                'nombre'  => $c->nombre,
-                'llena'   => $c->estaLlena(),
-                'cupos'   => $c->cuposDisponibles(),
-            ];
-        });
-
-        return [
-            'id'       => $n->id,
-            'tipo'     => 'nocturna',
-            'carreras' => $carreras,
-            'opciones' => $carreras->map(fn($c) => ['id' => $c['id'], 'nombre' => $c['nombre']]),
-        ];
-    } else {
-        $secciones = $n->secciones->where('activa', true)->values()->map(function($s) {
-            $talleres = $s->talleres->map(function($t) {
+    $nivelesJs = $niveles->map(function($n) use ($esNocturna, $esPlanNacional) {
+        if ($esNocturna) {
+            $carreras = $n->carreras->where('activa', true)->values()->map(function($c) {
                 return [
-                    'id'    => $t->id,
-                    'nombre'=> $t->nombre,
-                    'grupo' => $t->grupo,
-                    'lleno' => $t->estaLleno(),
-                    'cupos' => $t->cuposDisponibles(),
+                    'id'     => $c->id,
+                    'nombre' => $c->nombre,
+                    'llena'  => $c->estaLlena(),
+                    'cupos'  => $c->cuposDisponibles(),
                 ];
             });
+
             return [
-                'id'      => $s->id,
-                'nombre'  => $s->nombre,
-                'talleres'=> $talleres,
+                'id'       => $n->id,
+                'tipo'     => 'nocturna',
+                'numero'   => $n->numero,
+                'carreras' => $carreras,
+                'opciones' => $carreras->map(fn($c) => ['id' => $c['id'], 'nombre' => $c['nombre']]),
             ];
-        });
+        } elseif ($esPlanNacional) {
+            $secciones = $n->secciones->where('activa', true)->values()->map(function($s) {
+                return ['id' => $s->id, 'nombre' => $s->nombre];
+            });
 
-        // Lista plana de todos los talleres de este nivel (para la segunda opción)
-        $opciones = collect();
-        foreach ($secciones as $seccion) {
-            foreach ($seccion['talleres'] as $taller) {
-                $opciones->push([
-                    'id'     => $taller['id'],
-                    'nombre' => $seccion['nombre'] . ' — ' . $taller['nombre'] . ' (Grupo ' . $taller['grupo'] . ')',
-                ]);
+            return [
+                'id'        => $n->id,
+                'tipo'      => 'planNacional',
+                'numero'    => $n->numero,
+                'secciones' => $secciones,
+            ];
+        } else {
+            $secciones = $n->secciones->where('activa', true)->values()->map(function($s) {
+                $talleres = $s->talleres->map(function($t) {
+                    return [
+                        'id'     => $t->id,
+                        'nombre' => $t->nombre,
+                        'grupo'  => $t->grupo,
+                        'lleno'  => $t->estaLleno(),
+                        'cupos'  => $t->cuposDisponibles(),
+                    ];
+                });
+                return [
+                    'id'       => $s->id,
+                    'nombre'   => $s->nombre,
+                    'talleres' => $talleres,
+                ];
+            });
+
+            $opciones = collect();
+            foreach ($secciones as $seccion) {
+                foreach ($seccion['talleres'] as $taller) {
+                    $opciones->push([
+                        'id'     => $taller['id'],
+                        'nombre' => $seccion['nombre'] . ' — ' . $taller['nombre'] . ' (Grupo ' . $taller['grupo'] . ')',
+                    ]);
+                }
             }
+
+            return [
+                'id'        => $n->id,
+                'tipo'      => 'diurna',
+                'numero'    => $n->numero,
+                'secciones' => $secciones,
+                'opciones'  => $opciones,
+            ];
         }
+    })->keyBy('id');
 
-        return [
-            'id'        => $n->id,
-            'tipo'      => 'diurna',
-            'secciones' => $secciones,
-            'opciones'  => $opciones,
-        ];
-    }
-})->keyBy('id');
-
-
-
-return view('prematricula.create', compact('niveles', 'nivelesJs', 'periodo', 'modalidad', 'esNocturna'));
+    return view('prematricula.create', compact('niveles', 'nivelesJs', 'periodo', 'modalidad', 'esNocturna', 'esPlanNacional', 'esDiurna'));
 }
 
     public function store(Request $request)
@@ -170,7 +179,10 @@ return view('prematricula.create', compact('niveles', 'nivelesJs', 'periodo', 'm
         'est_nacimiento'   => 'required|date',
         'est_genero'       => 'nullable|string',
         'est_nacionalidad' => 'nullable|string',
-        'est_adecuacion'   => 'required|string',
+        'est_adecuacion'           => 'nullable|string',
+        'est_tipo_discapacidad'    => 'nullable|string|max:150',
+        'est_boleta_ubicacion'     => 'nullable|in:Sí,No',
+        'est_nivel_funcionamiento' => 'nullable|string',
         'est_email_mep'    => 'nullable|email',
 
         'est_provincia' => 'required|string',
@@ -216,16 +228,25 @@ return view('prematricula.create', compact('niveles', 'nivelesJs', 'periodo', 'm
         'colegio_procedencia'   => 'required|string',
         'anio_cursado_anterior' => 'required|string',
 
+        'tecnica_1'             => 'nullable|string|max:150',
+        'tecnica_2'             => 'nullable|string|max:150',
+        'formacion_vocacional'  => 'nullable|string|max:150',
+        'tecnica_alto'          => 'nullable|string|max:150',
+        'seguimiento_pn'        => 'nullable|string',
+
         'doc_cedula' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120|required_without:fisico_cedula',
         'doc_notas'  => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120|required_without:fisico_notas',
         'doc_foto'   => 'nullable|file|mimes:jpg,jpeg,png|max:2048',
         'doc_cedula_encargado' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120|required_without:fisico_cedula_encargado',
         'doc_prueba_admision'  => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        'doc_pase'              => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
 
         'fisico_cedula'           => 'nullable|boolean',
         'fisico_notas'            => 'nullable|boolean',
         'fisico_cedula_encargado' => 'nullable|boolean',
         'fisico_prueba_admision'  => 'nullable|boolean',
+        'fisico_pase'             => 'nullable|boolean',
+
         'modalidad_id' => 'required|exists:modalidades,id',
         'taller_segunda_opcion_id'  => 'nullable|exists:seccion_talleres,id',
         'carrera_segunda_opcion_id' => 'nullable|exists:carreras,id',
@@ -262,14 +283,17 @@ if (empty($emailMep)) {
 }
 
 $estudiante = Estudiante::create([
-    'nombre'           => $validado['est_nombre'],
-    'apellido'         => $validado['est_apellido'],
-    'cedula'           => $validado['est_cedula'],
-    'fecha_nacimiento' => $validado['est_nacimiento'],
-    'genero'           => $validado['est_genero'] ?? null,
-    'nacionalidad'     => $validado['est_nacionalidad'] ?? null,
-    'adecuacion'       => $validado['est_adecuacion'],
-    'email_mep'        => $emailMep,
+    'nombre'                => $validado['est_nombre'],
+    'apellido'              => $validado['est_apellido'],
+    'cedula'                => $validado['est_cedula'],
+    'fecha_nacimiento'      => $validado['est_nacimiento'],
+    'genero'                => $validado['est_genero'] ?? null,
+    'nacionalidad'          => $validado['est_nacionalidad'] ?? null,
+    'adecuacion'            => $validado['est_adecuacion'] ?? null,
+    'tipo_discapacidad'     => $validado['est_tipo_discapacidad'] ?? null,
+    'boleta_ubicacion'      => $validado['est_boleta_ubicacion'] ?? null,
+    'nivel_funcionamiento'  => $validado['est_nivel_funcionamiento'] ?? null,
+    'email_mep'             => $emailMep,
         'direccion' => implode(', ', array_filter([
             $validado['est_provincia'],
             $validado['est_canton'],
@@ -323,6 +347,40 @@ if (!empty($validado['tut3_nombre'])) {
         'direccion'           => $direccionTutor,
     ];
 }
+$modalidadSeleccionada = \App\Models\Modalidad::find($validado['modalidad_id']);
+$esPlanNacional = $modalidadSeleccionada && $modalidadSeleccionada->nombre === 'Plan Nacional';
+
+if ($esPlanNacional) {
+    $request->validate([
+        'est_tipo_discapacidad'    => 'required|string|max:150',
+        'est_boleta_ubicacion'     => 'required|in:Sí,No',
+        'est_nivel_funcionamiento' => 'required|string',
+    ]);
+} else {
+    $request->validate([
+        'est_adecuacion' => 'required|string',
+    ]);
+}
+
+$nivelSeleccionado = \App\Models\Nivel::find($validado['nivel_id']);
+$esBajoCiclo = $nivelSeleccionado && in_array((string) $nivelSeleccionado->numero, ['7', '8', '9']);
+
+if ($esPlanNacional) {
+    $validado = array_merge($validado, $request->validate([
+        'seccion_id' => 'required|exists:secciones,id',
+    ]));
+
+    if ($esBajoCiclo) {
+        $validado = array_merge($validado, $request->validate([
+            'tecnica_1' => 'required|string|max:150',
+        ]));
+    } else {
+        $validado = array_merge($validado, $request->validate([
+            'formacion_vocacional' => 'required|string|max:150',
+        ]));
+    }
+}
+
     
 
     $principalNum = (int) $validado['principal'];
@@ -356,6 +414,11 @@ if (!empty($validado['tut3_nombre'])) {
         'taller_cuarta_opcion_id'   => $validado['taller_cuarta_opcion_id'] ?? null,
         'carrera_tercera_opcion_id' => $validado['carrera_tercera_opcion_id'] ?? null,
         'carrera_cuarta_opcion_id'  => $validado['carrera_cuarta_opcion_id'] ?? null,
+        'tecnica_1'            => ($esPlanNacional && $esBajoCiclo) ? ($validado['tecnica_1'] ?? null) : null,
+        'tecnica_2'            => ($esPlanNacional && $esBajoCiclo) ? ($validado['tecnica_2'] ?? null) : null,
+        'formacion_vocacional' => ($esPlanNacional && !$esBajoCiclo) ? ($validado['formacion_vocacional'] ?? null) : null,
+        'tecnica_3'            => ($esPlanNacional && !$esBajoCiclo) ? ($validado['tecnica_alto'] ?? null) : null,
+        'seguimiento_pn'       => ($esPlanNacional && !$esBajoCiclo) ? ($validado['seguimiento_pn'] ?? null) : null,
     ]);
 
     foreach ($tutoresCreados as $numero => $tutorCreado) {
@@ -365,13 +428,23 @@ if (!empty($validado['tut3_nombre'])) {
         ]);
     }
 
+    if ($esPlanNacional) {
+    $request->validate([
+        'doc_pase' => 'required_without:fisico_pase|file|mimes:pdf,jpg,jpeg,png|max:5120',
+    ]);
+}
+
     $mapaDocumentos = [
     'doc_cedula'           => ['tipo' => 'cedula_estudiante', 'fisico' => 'fisico_cedula'],
     'doc_notas'            => ['tipo' => 'notas', 'fisico' => 'fisico_notas'],
     'doc_foto'             => ['tipo' => 'foto', 'fisico' => 'fisico_foto'],
     'doc_cedula_encargado' => ['tipo' => 'cedula_encargado', 'fisico' => 'fisico_cedula_encargado'],
     'doc_prueba_admision'  => ['tipo' => 'prueba_admision', 'fisico' => 'fisico_prueba_admision'],
-    ];
+];
+
+if ($esPlanNacional) {
+    $mapaDocumentos['doc_pase'] = ['tipo' => 'pase', 'fisico' => 'fisico_pase'];
+}
 
     foreach ($mapaDocumentos as $campoFormulario => $info) {
         $esFisico = $info['fisico'] && $request->boolean($info['fisico']);
@@ -433,7 +506,7 @@ public function descargarPdf(Prematricula $prematricula)
 
     $ruta = \App\Services\BoletaPdfBuilder::generar($prematricula);
 
-    return Storage::download($ruta, 'prematricula-' . $prematricula->codigo . '.pdf');
+    return Storage::download($ruta, 'Matricula-' . $prematricula->codigo . '.pdf');
 }
 
 public function reenviarCorreo(Prematricula $prematricula)

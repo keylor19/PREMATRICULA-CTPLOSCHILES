@@ -3,7 +3,7 @@
 namespace App\Exports;
 
 use App\Models\Prematricula;
-use App\Models\Carrera;
+use App\Models\Seccion;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithTitle;
@@ -11,18 +11,17 @@ use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class CarreraSheet implements FromCollection, WithHeadings, WithTitle, WithStyles, WithColumnWidths
+class PlanNacionalSheet implements FromCollection, WithHeadings, WithTitle, WithStyles, WithColumnWidths
 {
     public function __construct(
-        public Carrera $carrera,
+        public Seccion $seccion,
         public int $periodoId,
         public int $modalidadId
     ) {}
 
     public function title(): string
     {
-        $titulo = $this->carrera->nivel->nombre . ' - ' . $this->carrera->nombre;
-        return substr(preg_replace('/[\\\\\/\?\*\[\]:]/', '', $titulo), 0, 31);
+        return $this->seccion->nombre;
     }
 
     public function headings(): array
@@ -35,10 +34,17 @@ class CarreraSheet implements FromCollection, WithHeadings, WithTitle, WithStyle
             'Edad',
             'Fecha de nacimiento',
             'Género',
-            'Adecuación',
             'Correo MEP',
             'Nivel',
-            'Carrera técnica',
+            'Sección',
+            'Técnica 1',
+            'Técnica 2',
+            'Formación vocacional',
+            'Técnica',
+            'Seguimiento',
+            'Tipo de discapacidad',
+            'Boleta de ubicación',
+            'Nivel de funcionamiento',
             'Centro educativo de procedencia',
             'Encargado principal',
             'Relación',
@@ -58,8 +64,8 @@ class CarreraSheet implements FromCollection, WithHeadings, WithTitle, WithStyle
     {
         $prematriculas = Prematricula::where('periodo_id', $this->periodoId)
             ->where('modalidad_id', $this->modalidadId)
-            ->where('carrera_id', $this->carrera->id)
-            ->with(['estudiante', 'tutor', 'tutores', 'nivel', 'carrera', 'documentos', 'carreraSegundaOpcion'])
+            ->where('seccion_id', $this->seccion->id)
+            ->with(['estudiante', 'tutor', 'tutores', 'nivel', 'seccion', 'documentos'])
             ->orderBy('created_at')
             ->get();
 
@@ -68,10 +74,19 @@ class CarreraSheet implements FromCollection, WithHeadings, WithTitle, WithStyle
             $enc2 = $encargados->get(1);
             $enc3 = $encargados->get(2);
 
-            $documentos = $p->documentos->map(function ($d) {
-                $estado = $d->entregado_fisico ? 'físico' : 'digital';
-                return ucfirst(str_replace('_', ' ', $d->tipo)) . ' (' . $estado . ')';
-            })->implode('; ');
+            $etiquetasDocPN = [
+    'cedula_estudiante' => 'Cédula estudiante',
+    'cedula_encargado'  => 'Cédula encargado',
+    'notas'             => 'Notas',
+    'foto'              => 'Foto',
+    'pase'              => 'PASE',
+];
+
+        $documentos = $p->documentos->map(function ($d) use ($etiquetasDocPN) {
+        $estado = $d->entregado_fisico ? 'agregado en físico' : 'agregado en digital';
+        $etiqueta = $etiquetasDocPN[$d->tipo] ?? ucfirst(str_replace('_', ' ', $d->tipo));
+        return $etiqueta . ' (' . $estado . ')';
+        })->implode('; ');
 
             return [
                 $i + 1,
@@ -81,10 +96,17 @@ class CarreraSheet implements FromCollection, WithHeadings, WithTitle, WithStyle
                 $p->estudiante->fecha_nacimiento->age,
                 $p->estudiante->fecha_nacimiento->format('d/m/Y'),
                 $p->estudiante->genero ?? '—',
-                $p->estudiante->adecuacion ?? 'No aplica',
                 $p->estudiante->email_mep ?? '—',
                 $p->nivel->nombre ?? '—',
-                $p->carrera->nombre ?? '—',
+                $p->seccion->nombre ?? '—',
+                $p->tecnica_1 ?? '—',
+                $p->tecnica_2 ?? '—',
+                $p->formacion_vocacional ?? '—',
+                $p->tecnica_3 ?? '—',
+                $p->seguimiento_pn ?? '—',
+                $p->estudiante->tipo_discapacidad ?? '—',
+                $p->estudiante->boleta_ubicacion ?? '—',
+                $p->estudiante->nivel_funcionamiento ?? '—',
                 $p->colegio_procedencia,
                 $p->tutor->nombre_completo,
                 $p->tutor->relacion,
@@ -111,13 +133,14 @@ class CarreraSheet implements FromCollection, WithHeadings, WithTitle, WithStyle
         ];
     }
 
-   public function columnWidths(): array
-{
-    return [
-        'A' => 5,  'B' => 12, 'C' => 28, 'D' => 14, 'E' => 7,  'F' => 16,
-        'G' => 10, 'H' => 22, 'I' => 26, 'J' => 14, 'K' => 20, 'L' => 28,
-        'M' => 24, 'N' => 14, 'O' => 14, 'P' => 26, 'Q' => 22,
-        'R' => 14, 'S' => 22, 'T' => 14, 'U' => 35, 'V' => 12, 'W' => 18,
-    ];
-}
+    public function columnWidths(): array
+    {
+        return [
+            'A' => 5,  'B' => 12, 'C' => 28, 'D' => 14, 'E' => 7,  'F' => 16,
+            'G' => 10, 'H' => 26, 'I' => 14, 'J' => 10, 'K' => 18, 'L' => 18,
+            'M' => 20, 'N' => 18, 'O' => 22, 'P' => 20, 'Q' => 16, 'R' => 24,
+            'S' => 28, 'T' => 24, 'U' => 14, 'V' => 14, 'W' => 26, 'X' => 22,
+            'Y' => 14, 'Z' => 22, 'AA' => 14, 'AB' => 35, 'AC' => 12, 'AD' => 18,
+        ];
+    }
 }

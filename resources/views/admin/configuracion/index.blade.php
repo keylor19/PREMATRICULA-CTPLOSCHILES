@@ -66,9 +66,13 @@
                                 </label>
                                 @if ($modalidadActual->nombre === 'Diurna')
                                     <select name="numero" required class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-blue-500 focus:ring-blue-500">
-                                        <option value="">Seleccionar</option>
-                                        <option value="7">7° año</option>
-                                        <option value="10">10° año</option>
+                                    <option value="">Seleccionar</option>
+                                    <option value="7">7° año</option>
+                                    <option value="8">8° año</option>
+                                    <option value="9">9° año</option>
+                                    <option value="10">10° año</option>
+                                    <option value="11">11° año</option>
+                                    <option value="12">12° año</option>
                                     </select>
                                @else
                              <input type="text" name="numero" placeholder="ej. I, II, III" required autocomplete="off"
@@ -83,26 +87,26 @@
                                 class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-blue-500 focus:ring-blue-500">
                             </div>
 
-                            @if ($modalidadActual->nombre === 'Diurna')
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Sección inicio *</label>
-                                    <input type="number" name="seccion_inicio" min="1" value="1" required
-                                        class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-blue-500 focus:ring-blue-500">
-                                    <p class="text-xs text-gray-400 mt-1">ej. 1 → primera sección será 7-1</p>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Sección fin *</label>
-                                    <input type="number" name="seccion_fin" min="1" value="1" required
-                                        class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-blue-500 focus:ring-blue-500">
-                                    <p class="text-xs text-gray-400 mt-1">ej. 7 → última sección será 7-7</p>
-                                </div>
+                           @if (in_array($modalidadActual->nombre, ['Diurna', 'Plan Nacional']))
+                            <div>
+                                 <label class="block text-sm font-medium text-gray-700 mb-1">Sección inicio *</label>
+                                <input type="number" name="seccion_inicio" min="1" value="1" required
+                                 class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-blue-500 focus:ring-blue-500">
+                                 <p class="text-xs text-gray-400 mt-1">ej. 1 → primera sección será 7-1</p>
+                             </div>
+                             <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Sección fin *</label>
+                            <input type="number" name="seccion_fin" min="1" value="1" required
+                             class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-blue-500 focus:ring-blue-500">
+                            <p class="text-xs text-gray-400 mt-1">ej. 10 → última sección será 7-10</p>
+                            </div>
                             @endif
                         </div>
 
-                        @if ($modalidadActual->nombre === 'Diurna')
-                            <div class="bg-yellow-50 border border-yellow-100 rounded-md p-3 text-xs text-yellow-700 mb-4">
-                                ⚠️ Al guardar se regeneran las secciones. Los talleres asignados se perderán.
-                            </div>
+                        @if (in_array($modalidadActual->nombre, ['Diurna', 'Plan Nacional']))
+                        <div class="bg-yellow-50 border border-yellow-100 rounded-md p-3 text-xs text-yellow-700 mb-4">
+                        ⚠️ Al guardar se regeneran las secciones.
+                        </div>
                         @endif
 
                         <button type="submit" class="bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium px-5 py-2 rounded-md">
@@ -197,11 +201,22 @@
                             </div>
 
                         @elseif ($modalidadActual->nombre === 'Plan Nacional')
-                         {{-- Vista Plan Nacional: sin configuración adicional, es texto libre --}}
-                            <div class="p-4">
-                             <div class="bg-blue-50 border border-blue-100 rounded-md p-3 text-xs text-blue-700">
-                       ℹ️ En Plan Nacional el docente escribe libremente la información de técnicas o formación vocacional al momento de matricular. No requiere configuración adicional en este nivel.
-                        </div>
+                        {{-- Vista Plan Nacional: solo secciones, sin talleres ni carreras --}}
+                        <div class="divide-y divide-gray-100">
+                         @forelse ($nivel->secciones as $seccion)
+                         <div class="p-4 flex items-center justify-between">
+                        <span class="font-semibold text-gray-900 text-sm">{{ $seccion->nombre }}</span>
+                         <form method="POST" action="{{ route('admin.configuracion.seccion.toggle', $seccion) }}">
+                          @csrf
+                            <button type="submit" class="text-xs {{ $seccion->activa ? 'text-red-500 hover:text-red-700' : 'text-green-600 hover:text-green-800' }}">
+                        {{ $seccion->activa ? 'Desactivar' : 'Activar' }}
+                    </button>
+                </form>
+            </div>
+        @empty
+            <div class="p-4 text-sm text-gray-400">No hay secciones generadas para este nivel.</div>
+        @endforelse
+   
                      </div>
                     @else
             {{-- Vista Nocturna: carreras técnicas --}}

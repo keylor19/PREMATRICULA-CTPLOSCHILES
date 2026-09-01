@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Prematrícula — CTP Los Chiles</title>
+    <title>Inicio de Sesión Matrícula CTP Los Chiles</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-green-800 flex items-center justify-center p-4">
@@ -26,7 +26,7 @@
                 <h2 class="text-white text-xl font-bold">
                     de Los Chiles
                 </h2>
-                <p class="text-blue-200 text-sm mt-2">Sistema de Prematrícula</p>
+                <p class="text-blue-200 text-sm mt-2">Sistema de Matrícula</p>
             </div>
 
             {{-- Formulario --}}
@@ -105,7 +105,7 @@
             {{-- Footer --}}
             <div class="px-8 pb-6 text-center">
                 <p class="text-xs text-gray-400">
-                    © {{ date('Y') }} CTP Los Chiles — Sistema de Prematrícula
+                    © {{ date('Y') }} CTP Los Chiles — Sistema de Matrícula
                 </p>
             </div>
         </div>

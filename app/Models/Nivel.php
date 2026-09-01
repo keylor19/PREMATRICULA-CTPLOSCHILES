@@ -8,12 +8,14 @@ class Nivel extends Model
 {
     protected $table = 'niveles';
     protected $fillable = [
-        'numero',
-        'nombre',
-        'seccion_inicio',
-        'seccion_fin',
-        'activo',
-    ];
+    'numero',
+    'nombre',
+    'seccion_inicio',
+    'seccion_fin',
+    'activo',
+    'modalidad_id',
+    'periodo_id',
+];
 
     protected $casts = [
         'activo' => 'boolean',

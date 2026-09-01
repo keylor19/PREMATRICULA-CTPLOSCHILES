@@ -2,12 +2,12 @@
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                Mis prematrículas
+                Mis Matrículas
             </h2>
             @if ($periodo && $periodo->estaAbierto())
                 <a href="{{ route('prematricula.create') }}"
                     class="inline-block bg-blue-700 hover:bg-blue-800 text-white font-medium px-4 py-2 rounded-md text-sm">
-                    + Nueva prematrícula
+                    + Nueva Matrícula
                 </a>
             @endif
         </div>
@@ -42,12 +42,12 @@
 
             @if ($prematriculas->isEmpty())
                 <div class="bg-white shadow-sm rounded-lg p-8 border border-gray-200 text-center">
-                    <h3 class="text-base font-semibold text-gray-900 mb-2">No hay prematrículas registradas</h3>
-                    <p class="text-sm text-gray-500 mb-6">Completá el formulario para registrar una prematrícula.</p>
+                    <h3 class="text-base font-semibold text-gray-900 mb-2">No hay Matrículas registradas</h3>
+                    <p class="text-sm text-gray-500 mb-6">Completá el formulario para registrar una Matrícula.</p>
                     @if ($periodo && $periodo->estaAbierto())
                         <a href="{{ route('prematricula.create') }}"
                             class="inline-block bg-blue-700 hover:bg-blue-800 text-white font-medium px-6 py-2.5 rounded-md text-sm">
-                            Iniciar prematrícula
+                            Iniciar Matrícula
                         </a>
                     @endif
                 </div>

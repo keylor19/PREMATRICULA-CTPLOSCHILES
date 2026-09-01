@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            Seleccionar modalidad
+            Seleccionar la modalidad de matricula:
         </h2>
     </x-slot>
 
@@ -14,7 +14,7 @@
             </div>
 
             <div class="bg-white shadow-sm rounded-lg p-6 border border-gray-200">
-                <h3 class="text-base font-semibold text-gray-900 mb-2">¿En qué modalidad vas a registrar la prematrícula?</h3>
+                <h3 class="text-base font-semibold text-gray-900 mb-2">¿En qué modalidad vas a registrar la Matrícula?</h3>
                 <p class="text-sm text-gray-500 mb-6">Seleccioná la modalidad correspondiente al estudiante.</p>
 
                 <div class="space-y-3">

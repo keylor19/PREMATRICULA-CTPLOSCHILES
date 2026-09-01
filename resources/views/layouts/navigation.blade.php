@@ -16,7 +16,7 @@
                             Matricular
                         </x-nav-link>
                         <x-nav-link :href="route('admin.prematriculas.index')" :active="request()->routeIs('admin.prematriculas.*')">
-                            Prematrículas
+                            Matrículas realizadas
                         </x-nav-link>
                         <x-nav-link :href="route('admin.configuracion.index')" :active="request()->routeIs('admin.configuracion.*')">
                             Configuración
@@ -32,7 +32,7 @@
                         </x-nav-link>
                     @else
                         <x-nav-link :href="route('prematricula.index')" :active="request()->routeIs('prematricula.*')">
-                            Prematrícula
+                            Matrícula
                         </x-nav-link>
                     @endif
                 </div>
@@ -89,7 +89,7 @@
                     Matricular
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.prematriculas.index')" :active="request()->routeIs('admin.prematriculas.*')">
-                    Prematrículas
+                    Matrículas
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.configuracion.index')" :active="request()->routeIs('admin.configuracion.*')">
                     Configuración
@@ -105,7 +105,7 @@
                 </x-responsive-nav-link>
             @else
                 <x-responsive-nav-link :href="route('prematricula.index')" :active="request()->routeIs('prematricula.*')">
-                    Prematrícula
+                    Matrícula
                 </x-responsive-nav-link>
             @endif
         </div>

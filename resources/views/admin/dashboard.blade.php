@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            Dashboard — Prematrícula en tiempo real
+            Dashboard — Matrículas en tiempo real
         </h2>
     </x-slot>
 
@@ -88,7 +88,38 @@
                             <span class="text-xs text-gray-400">({{ $bloque['total'] }} registradas)</span>
                         </div>
 
-                        @if ($bloque['esDiurna'])
+                        @if ($bloque['esPlanNacional'])
+                            {{-- Plan Nacional: tabla simple por sección --}}
+                            @if (count($bloque['porSeccionPN']) > 0)
+                                <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+                                    <table class="min-w-full divide-y divide-gray-200">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nivel</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sección</th>
+                                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Matriculados</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-100">
+                                            @foreach ($bloque['porSeccionPN'] as $fila)
+                                                <tr class="hover:bg-gray-50">
+                                                    <td class="px-4 py-3 text-sm text-gray-600">{{ $fila['nivel'] }}</td>
+                                                    <td class="px-4 py-3 text-sm font-semibold text-gray-900">{{ $fila['seccion'] }}</td>
+                                                    <td class="px-4 py-3 text-center text-sm font-bold text-blue-700">{{ $fila['matriculados'] }}</td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                        <tfoot class="bg-gray-50 border-t border-gray-200">
+                                            <tr>
+                                                <td colspan="2" class="px-4 py-3 text-sm font-semibold text-gray-700">Total</td>
+                                                <td class="px-4 py-3 text-center text-sm font-bold text-gray-900">{{ collect($bloque['porSeccionPN'])->sum('matriculados') }}</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            @endif
+
+                        @elseif ($bloque['esDiurna'])
                             @if (count($bloque['porSeccion']) > 0)
                                 <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
                                     <table class="min-w-full divide-y divide-gray-200">
@@ -140,9 +171,20 @@
                                                 </tr>
                                             @endforeach
                                         </tbody>
+                                        <tfoot class="bg-gray-50 border-t border-gray-200">
+                                            <tr>
+                                                <td colspan="2" class="px-4 py-3 text-sm font-semibold text-gray-700">Total general</td>
+                                                <td class="px-4 py-3 text-center text-sm font-bold text-blue-700">{{ collect($bloque['porSeccion'])->sum('matricula_a') }}</td>
+                                                <td colspan="2" class="px-4 py-3 text-center text-xs text-gray-400">Grupo A</td>
+                                                <td class="px-4 py-3 text-center text-sm font-bold text-purple-700">{{ collect($bloque['porSeccion'])->sum('matricula_b') }}</td>
+                                                <td colspan="2" class="px-4 py-3 text-center text-xs text-gray-400">Grupo B</td>
+                                                <td class="px-4 py-3 text-center text-sm font-bold text-gray-900">{{ collect($bloque['porSeccion'])->sum('total') }}</td>
+                                            </tr>
+                                        </tfoot>
                                     </table>
                                 </div>
                             @endif
+
                         @else
                             @if (count($bloque['porCarrera']) > 0)
                                 <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
@@ -154,6 +196,7 @@
                                                 <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Matriculados</th>
                                                 <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Capacidad</th>
                                                 <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Disponibles</th>
+                                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Progreso</th>
                                                 <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Estado</th>
                                             </tr>
                                         </thead>
@@ -170,6 +213,15 @@
                                                         {{ $fila['disponibles'] }}
                                                     </td>
                                                     <td class="px-4 py-3 text-center">
+                                                        <div class="flex flex-col items-center gap-1">
+                                                            <span class="text-xs text-gray-500">{{ $fila['porcentaje'] }}%</span>
+                                                            <div class="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                                <div class="h-full rounded-full {{ $fila['llena'] ? 'bg-red-500' : ($fila['porcentaje'] > 75 ? 'bg-yellow-500' : 'bg-blue-500') }}"
+                                                                    style="width: {{ min($fila['porcentaje'], 100) }}%"></div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td class="px-4 py-3 text-center">
                                                         @if ($fila['llena'])
                                                             <span class="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200">🔴 Llena</span>
                                                         @elseif ($fila['porcentaje'] > 75)
@@ -181,6 +233,15 @@
                                                 </tr>
                                             @endforeach
                                         </tbody>
+                                        <tfoot class="bg-gray-50 border-t border-gray-200">
+                                            <tr>
+                                                <td colspan="2" class="px-4 py-3 text-sm font-semibold text-gray-700">Total</td>
+                                                <td class="px-4 py-3 text-center text-sm font-bold text-blue-700">{{ collect($bloque['porCarrera'])->sum('matriculados') }}</td>
+                                                <td class="px-4 py-3 text-center text-sm font-bold text-gray-700">{{ collect($bloque['porCarrera'])->sum('capacidad') }}</td>
+                                                <td class="px-4 py-3 text-center text-sm font-bold text-green-700">{{ collect($bloque['porCarrera'])->sum('disponibles') }}</td>
+                                                <td colspan="2"></td>
+                                            </tr>
+                                        </tfoot>
                                     </table>
                                 </div>
                             @endif

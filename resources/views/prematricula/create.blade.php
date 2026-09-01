@@ -44,30 +44,32 @@
                                 class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                         </div>
                         <div>
-    <label class="block text-sm font-medium text-gray-700 mb-1">Cédula / pasaporte / DIMEX *</label>
-    <input type="text" name="est_cedula" id="est_cedula" value="{{ old('est_cedula') }}" required
-        oninput="generarCorreoMep(this.value)"
-        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-</div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Cédula / pasaporte / DIMEX *</label>
+                            <input type="text" name="est_cedula" id="est_cedula" value="{{ old('est_cedula') }}" required
+                                oninput="generarCorreoMep(this.value)"
+                                class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        </div>
 
-@if ($esNocturna === false)
-<div>
-    <label class="block text-sm font-medium text-gray-700 mb-1">Correo institucional (MEP)</label>
-    <input type="text" name="est_email_mep" id="est_email_mep" value="{{ old('est_email_mep') }}"
-        placeholder="Se genera automáticamente"
-        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-    <p class="text-xs text-gray-400 mt-1">Se genera con la cédula, pero podés editarlo si es necesario.</p>
-</div>
-@endif
-      <div>
-    <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de nacimiento *</label>
-    <div class="flex items-center gap-3">
-        <input type="date" name="est_nacimiento" id="est_nacimiento" value="{{ old('est_nacimiento') }}" required
-            oninput="calcularEdad(this.value)"
-            class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-        <span id="edad_calculada" class="whitespace-nowrap text-sm font-medium text-gray-500"></span>
-    </div>
-</div>
+                        @if ($esNocturna === false)
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Correo institucional (MEP)</label>
+                                <input type="text" name="est_email_mep" id="est_email_mep" value="{{ old('est_email_mep') }}"
+                                    placeholder="Se genera automáticamente"
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                <p class="text-xs text-gray-400 mt-1">Se genera con la cédula, pero podés editarlo si es necesario.</p>
+                            </div>
+                        @endif
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de nacimiento *</label>
+                            <div class="flex items-center gap-3">
+                                <input type="date" name="est_nacimiento" id="est_nacimiento" value="{{ old('est_nacimiento') }}" required
+                                    oninput="calcularEdad(this.value)"
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                <span id="edad_calculada" class="whitespace-nowrap text-sm font-medium text-gray-500"></span>
+                            </div>
+                        </div>
+
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Género</label>
                             <select name="est_genero" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
@@ -127,257 +129,281 @@
                             <input type="hidden" name="est_direccion" id="est_direccion_completa">
                         </div>
 
-                        <div class="md:col-span-2">
-    <label class="block text-sm font-medium text-gray-700 mb-1">Adecuación *</label>
-    <select name="est_adecuacion" required
-        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-        <option value="">Seleccionar</option>
-        <option value="No aplica">No aplica</option>
-        <option value="Adecuación de acceso">Adecuación de acceso</option>
-        <option value="Adecuación no significativa">Adecuación no significativa</option>
-        <option value="Adecuación significativa">Adecuación significativa</option>
-    </select>
-</div>
+                        @if ($modalidad->nombre === 'Plan Nacional')
+                            {{-- Campos exclusivos de Plan Nacional --}}
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de discapacidad *</label>
+                                <input type="text" name="est_tipo_discapacidad" value="{{ old('est_tipo_discapacidad') }}" required
+                                    placeholder="Describa el tipo de discapacidad"
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Cuenta con boleta de ubicación *</label>
+                                <select name="est_boleta_ubicacion" required
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    <option value="">Seleccionar</option>
+                                    <option value="Sí">Sí</option>
+                                    <option value="No">No</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Nivel de funcionamiento *</label>
+                                <textarea name="est_nivel_funcionamiento" rows="2" required
+                                    placeholder="Describa el nivel de funcionamiento"
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">{{ old('est_nivel_funcionamiento') }}</textarea>
+                            </div>
+                        @else
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Adecuación *</label>
+                                <select name="est_adecuacion" required
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    <option value="">Seleccionar</option>
+                                    <option value="No aplica">No aplica</option>
+                                    <option value="Adecuación de acceso">Adecuación de acceso</option>
+                                    <option value="Adecuación no significativa">Adecuación no significativa</option>
+                                    <option value="Adecuación significativa">Adecuación significativa</option>
+                                </select>
+                            </div>
+                        @endif
                     </div>
                 </div>
 
                 {{-- Datos de los encargados --}}
-<div class="bg-white shadow-sm rounded-lg p-6 border border-gray-200">
-    <h3 class="text-base font-semibold text-gray-900 mb-1">Datos del padre / madre / tutor</h3>
-    <p class="text-xs text-gray-400 mb-4">Podés agregar hasta 3 encargados. Marcá cuál es el principal (recibe correos y firma el documento).</p>
+                <div class="bg-white shadow-sm rounded-lg p-6 border border-gray-200">
+                    <h3 class="text-base font-semibold text-gray-900 mb-1">Datos del padre / madre / tutor</h3>
+                    <p class="text-xs text-gray-400 mb-4">Podés agregar hasta 3 encargados. Marcá cuál es el principal (recibe correos y firma el documento).</p>
 
-    {{-- Encargado 1 (obligatorio) --}}
-    <div class="border border-blue-100 bg-blue-50 rounded-lg p-4 mb-4">
-        <div class="flex items-center justify-between mb-3">
-            <h4 class="text-sm font-semibold text-gray-900">Encargado 1</h4>
-            <label class="flex items-center gap-2 text-xs text-blue-700 font-medium">
-                <input type="radio" name="principal" value="1" checked>
-                Marcar como principal
-            </label>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nombre completo *</label>
-                <input type="text" name="tut_nombre" value="{{ old('tut_nombre') }}" required
-                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Relación con el estudiante *</label>
-                <select name="tut_relacion" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    <option value="">Seleccionar</option>
-                    <option value="Padre">Padre</option>
-                    <option value="Madre">Madre</option>
-                    <option value="Tutor legal">Tutor legal</option>
-                   
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Cédula *</label>
-                <input type="text" name="tut_cedula" value="{{ old('tut_cedula') }}" required
-                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono principal *</label>
-                <input type="tel" name="tut_telefono" value="{{ old('tut_telefono') }}" required
-                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono secundario</label>
-                <input type="tel" name="tut_telefono2" value="{{ old('tut_telefono2') }}"
-                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico *</label>
-                <input type="email" name="tut_email" value="{{ old('tut_email') }}" required
-                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Ocupación</label>
-                <input type="text" name="tut_ocupacion" value="{{ old('tut_ocupacion') }}"
-                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-            </div>
+                    {{-- Encargado 1 (obligatorio) --}}
+                    <div class="border border-blue-100 bg-blue-50 rounded-lg p-4 mb-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="text-sm font-semibold text-gray-900">Encargado 1</h4>
+                            <label class="flex items-center gap-2 text-xs text-blue-700 font-medium">
+                                <input type="radio" name="principal" value="1" checked>
+                                Marcar como principal
+                            </label>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Nombre completo *</label>
+                                <input type="text" name="tut_nombre" value="{{ old('tut_nombre') }}" required
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Relación con el estudiante *</label>
+                                <select name="tut_relacion" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    <option value="">Seleccionar</option>
+                                    <option value="Padre">Padre</option>
+                                    <option value="Madre">Madre</option>
+                                    <option value="Tutor legal">Tutor legal</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Cédula *</label>
+                                <input type="text" name="tut_cedula" value="{{ old('tut_cedula') }}" required
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono principal *</label>
+                                <input type="tel" name="tut_telefono" value="{{ old('tut_telefono') }}" required
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono secundario</label>
+                                <input type="tel" name="tut_telefono2" value="{{ old('tut_telefono2') }}"
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico *</label>
+                                <input type="email" name="tut_email" value="{{ old('tut_email') }}" required
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Ocupación</label>
+                                <input type="text" name="tut_ocupacion" value="{{ old('tut_ocupacion') }}"
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
 
-            {{-- Dirección del encargado 1 --}}
-            <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Dirección de residencia *</label>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs text-gray-500 mb-1">Provincia *</label>
-                        <select name="tut_provincia" id="tut_provincia" required
-                            onchange="cargarCantones('tut', this.value)"
-                            class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-blue-500 focus:ring-blue-500">
-                            <option value="">Seleccionar provincia</option>
-                            <option value="Alajuela">Alajuela</option>
-                            <option value="San José">San José</option>
-                            <option value="Cartago">Cartago</option>
-                            <option value="Heredia">Heredia</option>
-                            <option value="Guanacaste">Guanacaste</option>
-                            <option value="Puntarenas">Puntarenas</option>
-                            <option value="Limón">Limón</option>
-                        </select>
+                            {{-- Dirección del encargado 1 --}}
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Dirección de residencia *</label>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs text-gray-500 mb-1">Provincia *</label>
+                                        <select name="tut_provincia" id="tut_provincia" required
+                                            onchange="cargarCantones('tut', this.value)"
+                                            class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-blue-500 focus:ring-blue-500">
+                                            <option value="">Seleccionar provincia</option>
+                                            <option value="Alajuela">Alajuela</option>
+                                            <option value="San José">San José</option>
+                                            <option value="Cartago">Cartago</option>
+                                            <option value="Heredia">Heredia</option>
+                                            <option value="Guanacaste">Guanacaste</option>
+                                            <option value="Puntarenas">Puntarenas</option>
+                                            <option value="Limón">Limón</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-500 mb-1">Cantón *</label>
+                                        <select name="tut_canton" id="tut_canton" required
+                                            onchange="cargarDistritos('tut', this.value)"
+                                            class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-blue-500 focus:ring-blue-500">
+                                            <option value="">Seleccionar cantón</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-500 mb-1">Distrito *</label>
+                                        <select name="tut_distrito" id="tut_distrito" required
+                                            class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-blue-500 focus:ring-blue-500">
+                                            <option value="">Seleccionar distrito</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-500 mb-1">Poblado / Señas *</label>
+                                        <input type="text" name="tut_poblado" value="{{ old('tut_poblado') }}" required
+                                            placeholder="Ej. Barrio La Cruz, 200m norte de la iglesia"
+                                            class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-blue-500 focus:ring-blue-500">
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <label class="flex items-center gap-2 text-xs text-gray-500">
+                                        <input type="checkbox" id="misma_direccion" onchange="copiarDireccionEstudiante(this.checked)">
+                                        Usar la misma dirección del estudiante
+                                    </label>
+                                </div>
+                                <input type="hidden" name="tut_direccion" id="tut_direccion_completa">
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-xs text-gray-500 mb-1">Cantón *</label>
-                        <select name="tut_canton" id="tut_canton" required
-                            onchange="cargarDistritos('tut', this.value)"
-                            class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-blue-500 focus:ring-blue-500">
-                            <option value="">Seleccionar cantón</option>
-                        </select>
+
+                    {{-- Encargado 2 (opcional) --}}
+                    <div id="bloque_encargado2" class="border border-gray-200 rounded-lg p-4 mb-4 hidden">
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="text-sm font-semibold text-gray-900">Encargado 2</h4>
+                            <div class="flex items-center gap-3">
+                                <label class="flex items-center gap-2 text-xs text-blue-700 font-medium">
+                                    <input type="radio" name="principal" value="2">
+                                    Marcar como principal
+                                </label>
+                                <button type="button" onclick="quitarEncargado(2)" class="text-xs text-red-500 hover:text-red-700">Quitar</button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
+                                <input type="text" name="tut2_nombre" value="{{ old('tut2_nombre') }}"
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Relación con el estudiante</label>
+                                <select name="tut2_relacion" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    <option value="">Seleccionar</option>
+                                    <option value="Padre">Padre</option>
+                                    <option value="Madre">Madre</option>
+                                    <option value="Tutor legal">Tutor legal</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Cédula</label>
+                                <input type="text" name="tut2_cedula" value="{{ old('tut2_cedula') }}"
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                                <input type="tel" name="tut2_telefono" value="{{ old('tut2_telefono') }}"
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono secundario</label>
+                                <input type="tel" name="tut2_telefono2" value="{{ old('tut2_telefono2') }}"
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+                                <input type="email" name="tut2_email" value="{{ old('tut2_email') }}"
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Ocupación</label>
+                                <input type="text" name="tut2_ocupacion" value="{{ old('tut2_ocupacion') }}"
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-xs text-gray-500 mb-1">Distrito *</label>
-                        <select name="tut_distrito" id="tut_distrito" required
-                            class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-blue-500 focus:ring-blue-500">
-                            <option value="">Seleccionar distrito</option>
-                        </select>
+
+                    {{-- Encargado 3 (opcional) --}}
+                    <div id="bloque_encargado3" class="border border-gray-200 rounded-lg p-4 mb-4 hidden">
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="text-sm font-semibold text-gray-900">Encargado 3</h4>
+                            <div class="flex items-center gap-3">
+                                <label class="flex items-center gap-2 text-xs text-blue-700 font-medium">
+                                    <input type="radio" name="principal" value="3">
+                                    Marcar como principal
+                                </label>
+                                <button type="button" onclick="quitarEncargado(3)" class="text-xs text-red-500 hover:text-red-700">Quitar</button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
+                                <input type="text" name="tut3_nombre" value="{{ old('tut3_nombre') }}"
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Relación con el estudiante</label>
+                                <select name="tut3_relacion" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    <option value="">Seleccionar</option>
+                                    <option value="Padre">Padre</option>
+                                    <option value="Madre">Madre</option>
+                                    <option value="Tutor legal">Tutor legal</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Cédula</label>
+                                <input type="text" name="tut3_cedula" value="{{ old('tut3_cedula') }}"
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                                <input type="tel" name="tut3_telefono" value="{{ old('tut3_telefono') }}"
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono secundario</label>
+                                <input type="tel" name="tut3_telefono2" value="{{ old('tut3_telefono2') }}"
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+                                <input type="email" name="tut3_email" value="{{ old('tut3_email') }}"
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Ocupación</label>
+                                <input type="text" name="tut3_ocupacion" value="{{ old('tut3_ocupacion') }}"
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-xs text-gray-500 mb-1">Poblado / Señas *</label>
-                        <input type="text" name="tut_poblado" value="{{ old('tut_poblado') }}" required
-                            placeholder="Ej. Barrio La Cruz, 200m norte de la iglesia"
-                            class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-blue-500 focus:ring-blue-500">
+
+                    <div class="flex gap-3">
+                        <button type="button" id="btn_agregar_encargado2" onclick="mostrarEncargado(2)"
+                            class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                            + Agregar segundo encargado
+                        </button>
+                        <button type="button" id="btn_agregar_encargado3" onclick="mostrarEncargado(3)"
+                            class="text-sm text-blue-600 hover:text-blue-800 font-medium hidden">
+                            + Agregar tercer encargado
+                        </button>
                     </div>
                 </div>
-                <div class="mt-2">
-                    <label class="flex items-center gap-2 text-xs text-gray-500">
-                        <input type="checkbox" id="misma_direccion" onchange="copiarDireccionEstudiante(this.checked)">
-                        Usar la misma dirección del estudiante
-                    </label>
-                </div>
-                <input type="hidden" name="tut_direccion" id="tut_direccion_completa">
-            </div>
-        </div>
-    </div>
-
-    {{-- Encargado 2 (opcional) --}}
-    <div id="bloque_encargado2" class="border border-gray-200 rounded-lg p-4 mb-4 hidden">
-        <div class="flex items-center justify-between mb-3">
-            <h4 class="text-sm font-semibold text-gray-900">Encargado 2</h4>
-            <div class="flex items-center gap-3">
-                <label class="flex items-center gap-2 text-xs text-blue-700 font-medium">
-                    <input type="radio" name="principal" value="2">
-                    Marcar como principal
-                </label>
-                <button type="button" onclick="quitarEncargado(2)" class="text-xs text-red-500 hover:text-red-700">Quitar</button>
-            </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
-                <input type="text" name="tut2_nombre" value="{{ old('tut2_nombre') }}"
-                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Relación con el estudiante</label>
-                <select name="tut2_relacion" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    <option value="">Seleccionar</option>
-                    <option value="Padre">Padre</option>
-                    <option value="Madre">Madre</option>
-                    <option value="Tutor legal">Tutor legal</option>
-                    
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Cédula</label>
-                <input type="text" name="tut2_cedula" value="{{ old('tut2_cedula') }}"
-                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-                <input type="tel" name="tut2_telefono" value="{{ old('tut2_telefono') }}"
-                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-            </div>
-            <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono secundario</label>
-            <input type="tel" name="tut2_telefono2" value="{{ old('tut2_telefono2') }}"
-             class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
-                <input type="email" name="tut2_email" value="{{ old('tut2_email') }}"
-                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Ocupación</label>
-                <input type="text" name="tut2_ocupacion" value="{{ old('tut2_ocupacion') }}"
-                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-            </div>
-        </div>
-    </div>
-
-    {{-- Encargado 3 (opcional) --}}
-    <div id="bloque_encargado3" class="border border-gray-200 rounded-lg p-4 mb-4 hidden">
-        <div class="flex items-center justify-between mb-3">
-            <h4 class="text-sm font-semibold text-gray-900">Encargado 3</h4>
-            <div class="flex items-center gap-3">
-                <label class="flex items-center gap-2 text-xs text-blue-700 font-medium">
-                    <input type="radio" name="principal" value="3">
-                    Marcar como principal
-                </label>
-                <button type="button" onclick="quitarEncargado(3)" class="text-xs text-red-500 hover:text-red-700">Quitar</button>
-            </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
-                <input type="text" name="tut3_nombre" value="{{ old('tut3_nombre') }}"
-                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Relación con el estudiante</label>
-                <select name="tut3_relacion" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    <option value="">Seleccionar</option>
-                    <option value="Padre">Padre</option>
-                    <option value="Madre">Madre</option>
-                    <option value="Tutor legal">Tutor legal</option>
-                    
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Cédula</label>
-                <input type="text" name="tut3_cedula" value="{{ old('tut3_cedula') }}"
-                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-                <input type="tel" name="tut3_telefono" value="{{ old('tut3_telefono') }}"
-                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-            </div>
-            <div>
-             <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono secundario</label>
-            <input type="tel" name="tut3_telefono2" value="{{ old('tut3_telefono2') }}"
-            class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
-                <input type="email" name="tut3_email" value="{{ old('tut3_email') }}"
-                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Ocupación</label>
-                <input type="text" name="tut3_ocupacion" value="{{ old('tut3_ocupacion') }}"
-                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-            </div>
-        </div>
-    </div>
-
-    <div class="flex gap-3">
-        <button type="button" id="btn_agregar_encargado2" onclick="mostrarEncargado(2)"
-            class="text-sm text-blue-600 hover:text-blue-800 font-medium">
-            + Agregar segundo encargado
-        </button>
-        <button type="button" id="btn_agregar_encargado3" onclick="mostrarEncargado(3)"
-            class="text-sm text-blue-600 hover:text-blue-800 font-medium hidden">
-            + Agregar tercer encargado
-        </button>
-    </div>
-</div>
 
                 {{-- Nivel y sección --}}
                 <div class="bg-white shadow-sm rounded-lg p-6 border border-gray-200">
                     <h3 class="text-base font-semibold text-gray-900 mb-4">
-                        {{ $esNocturna ? 'Nivel y carrera técnica' : 'Nivel y sección solicitada' }}
+                        @if ($esNocturna) Nivel y carrera técnica
+                        @elseif ($esPlanNacional) Nivel y sección
+                        @else Nivel y sección solicitada
+                        @endif
                     </h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -400,6 +426,14 @@
                                     <option value="">Seleccione primero el nivel</option>
                                 </select>
                             </div>
+                        @elseif ($esPlanNacional)
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Sección *</label>
+                                <select name="seccion_id" id="seccion_id" required
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    <option value="">Seleccione primero el nivel</option>
+                                </select>
+                            </div>
                         @else
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Sección preferida</label>
@@ -418,132 +452,142 @@
                             </div>
                         @endif
 
-                       <div>
-    <label class="block text-sm font-medium text-gray-700 mb-1" id="label_colegio">
-        Centro educativo de procedencia *
-    </label>
-    <input type="text" name="colegio_procedencia" id="colegio_procedencia"
-        value="{{ old('colegio_procedencia') }}" required
-        placeholder="Nombre del centro educativo"
-        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-</div>
-<div>
-    <label class="block text-sm font-medium text-gray-700 mb-1">Año que cursó anteriormente *</label>
-    <input type="text" name="anio_cursado_anterior" value="{{ old('anio_cursado_anterior') }}" required
-        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-</div>
-<div class="md:col-span-2">
-    <label class="block text-sm font-medium text-gray-700 mb-1">
-        {{ $esNocturna ? 'Segunda opción de carrera técnica (preferencia, no reserva cupo)' : 'Segunda opción de taller (preferencia, no reserva cupo)' }}
-    </label>
-    <select name="{{ $esNocturna ? 'carrera_segunda_opcion_id' : 'taller_segunda_opcion_id' }}" id="segunda_opcion_id"
-        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-        <option value="">Seleccione primero el nivel</option>
-    </select>
-    <p class="text-xs text-gray-400 mt-1">Este campo es solo informativo y no descuenta cupo disponible.</p>
-</div>
+                        @if ($esPlanNacional)
+                            {{-- Campos exclusivos de Plan Nacional, según ciclo del nivel elegido --}}
+                            <div id="bloque_bajociclo" class="md:col-span-2 hidden">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Técnica 1 *</label>
+                                        <input type="text" name="tecnica_1" id="tecnica_1" value="{{ old('tecnica_1') }}"
+                                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Técnica 2</label>
+                                        <input type="text" name="tecnica_2" id="tecnica_2" value="{{ old('tecnica_2') }}"
+                                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="bloque_altociclo" class="md:col-span-2 hidden">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Formación vocacional *</label>
+                                        <input type="text" name="formacion_vocacional" id="formacion_vocacional" value="{{ old('formacion_vocacional') }}"
+                                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Técnica</label>
+                                        <input type="text" name="tecnica_alto" id="tecnica_alto" value="{{ old('tecnica_alto') }}"
+                                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Seguimiento</label>
+                                        <textarea name="seguimiento_pn" id="seguimiento_pn" rows="2"
+                                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">{{ old('seguimiento_pn') }}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
 
-<div class="md:col-span-2" id="bloque_tercera_opcion" style="display:none;">
-    <label class="block text-sm font-medium text-gray-700 mb-1">
-        {{ $esNocturna ? 'Tercera opción de carrera técnica' : 'Tercera opción de taller' }}
-    </label>
-    <select name="{{ $esNocturna ? 'carrera_tercera_opcion_id' : 'taller_tercera_opcion_id' }}" id="tercera_opcion_id"
-        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-        <option value="">Sin tercera opción</option>
-    </select>
-</div>
-
-<div class="md:col-span-2" id="bloque_cuarta_opcion" style="display:none;">
-    <label class="block text-sm font-medium text-gray-700 mb-1">
-        {{ $esNocturna ? 'Cuarta opción de carrera técnica' : 'Cuarta opción de taller' }}
-    </label>
-    <select name="{{ $esNocturna ? 'carrera_cuarta_opcion_id' : 'taller_cuarta_opcion_id' }}" id="cuarta_opcion_id"
-        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-        <option value="">Sin cuarta opción</option>
-    </select>
-</div>
-
-<div class="md:col-span-2">
-    <button type="button" id="btn_mostrar_tercera" onclick="mostrarOpcionExtra(3)"
-        class="text-sm text-blue-600 hover:text-blue-800 font-medium">
-        + Agregar tercera opción
-    </button>
-    <button type="button" id="btn_mostrar_cuarta" onclick="mostrarOpcionExtra(4)"
-        class="text-sm text-blue-600 hover:text-blue-800 font-medium ml-4 hidden">
-        + Agregar cuarta opción
-    </button>
-</div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1" id="label_colegio">
+                                Centro educativo de procedencia *
+                            </label>
+                            <input type="text" name="colegio_procedencia" id="colegio_procedencia"
+                                value="{{ old('colegio_procedencia') }}" required
+                                placeholder="Nombre del centro educativo"
+                                class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Año que cursó anteriormente *</label>
+                            <input type="text" name="anio_cursado_anterior" value="{{ old('anio_cursado_anterior') }}" required
+                                class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        </div>
                     </div>
                 </div>
 
                 {{-- Documentos --}}
-<div class="bg-white shadow-sm rounded-lg p-6 border border-gray-200">
-    <h3 class="text-base font-semibold text-gray-900 mb-4">Documentos adjuntos</h3>
-    <div class="space-y-5">
+                <div class="bg-white shadow-sm rounded-lg p-6 border border-gray-200">
+                    <h3 class="text-base font-semibold text-gray-900 mb-4">Documentos adjuntos</h3>
+                    <div class="space-y-5">
 
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Copia de cédula del estudiante *</label>
-            <input type="file" name="doc_cedula" accept=".pdf,.jpg,.jpeg,.png"
-                class="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700">
-            <p class="text-xs text-gray-400 mt-1">PDF, JPG o PNG — máximo 5 MB</p>
-            <label class="flex items-center gap-2 text-xs text-gray-600 mt-2">
-                <input type="checkbox" name="fisico_cedula" value="1" onchange="toggleFisico(this, 'doc_cedula')">
-                Lo entrega en físico (no lo adjunta digitalmente)
-            </label>
-        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Copia de cédula del estudiante *</label>
+                            <input type="file" name="doc_cedula" accept=".pdf,.jpg,.jpeg,.png"
+                                class="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700">
+                            <p class="text-xs text-gray-400 mt-1">PDF, JPG o PNG — máximo 5 MB</p>
+                            <label class="flex items-center gap-2 text-xs text-gray-600 mt-2">
+                                <input type="checkbox" name="fisico_cedula" value="1" onchange="toggleFisico(this, 'doc_cedula')">
+                                Lo entrega en físico (no lo adjunta digitalmente)
+                            </label>
+                        </div>
 
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Certificado de notas del año anterior *</label>
-            <input type="file" name="doc_notas" accept=".pdf,.jpg,.jpeg,.png"
-                class="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700">
-            <p class="text-xs text-gray-400 mt-1">PDF — máximo 5 MB</p>
-            <label class="flex items-center gap-2 text-xs text-gray-600 mt-2">
-                <input type="checkbox" name="fisico_notas" value="1" onchange="toggleFisico(this, 'doc_notas')">
-                Lo entrega en físico (no lo adjunta digitalmente)
-            </label>
-        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Certificado de notas del año anterior *</label>
+                            <input type="file" name="doc_notas" accept=".pdf,.jpg,.jpeg,.png"
+                                class="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700">
+                            <p class="text-xs text-gray-400 mt-1">PDF — máximo 5 MB</p>
+                            <label class="flex items-center gap-2 text-xs text-gray-600 mt-2">
+                                <input type="checkbox" name="fisico_notas" value="1" onchange="toggleFisico(this, 'doc_notas')">
+                                Lo entrega en físico (no lo adjunta digitalmente)
+                            </label>
+                        </div>
 
-        <div>
-    <label class="block text-sm font-medium text-gray-700 mb-1">Foto reciente del estudiante</label>
-    <input type="file" name="doc_foto" accept=".jpg,.jpeg,.png"
-        class="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700">
-    <p class="text-xs text-gray-400 mt-1">JPG o PNG — máximo 2 MB (opcional)</p>
-    <label class="flex items-center gap-2 text-xs text-gray-600 mt-2">
-        <input type="checkbox" name="fisico_foto" value="1" onchange="toggleFisico(this, 'doc_foto')">
-        Lo entrega en físico (no lo adjunta digitalmente)
-    </label>
-</div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Foto reciente del estudiante</label>
+                            <input type="file" name="doc_foto" accept=".jpg,.jpeg,.png"
+                                class="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700">
+                            <p class="text-xs text-gray-400 mt-1">JPG o PNG — máximo 2 MB (opcional)</p>
+                            <label class="flex items-center gap-2 text-xs text-gray-600 mt-2">
+                                <input type="checkbox" name="fisico_foto" value="1" onchange="toggleFisico(this, 'doc_foto')">
+                                Lo entrega en físico (no lo adjunta digitalmente)
+                            </label>
+                        </div>
 
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Copia de cédula del encargado legal *</label>
-            <input type="file" name="doc_cedula_encargado" accept=".pdf,.jpg,.jpeg,.png"
-                class="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700">
-            <p class="text-xs text-gray-400 mt-1">PDF, JPG o PNG — máximo 5 MB</p>
-            <label class="flex items-center gap-2 text-xs text-gray-600 mt-2">
-                <input type="checkbox" name="fisico_cedula_encargado" value="1" onchange="toggleFisico(this, 'doc_cedula_encargado')">
-                Lo entrega en físico (no lo adjunta digitalmente)
-            </label>
-        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Copia de cédula del encargado legal *</label>
+                            <input type="file" name="doc_cedula_encargado" accept=".pdf,.jpg,.jpeg,.png"
+                                class="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700">
+                            <p class="text-xs text-gray-400 mt-1">PDF, JPG o PNG — máximo 5 MB</p>
+                            <label class="flex items-center gap-2 text-xs text-gray-600 mt-2">
+                                <input type="checkbox" name="fisico_cedula_encargado" value="1" onchange="toggleFisico(this, 'doc_cedula_encargado')">
+                                Lo entrega en físico (no lo adjunta digitalmente)
+                            </label>
+                        </div>
 
-        @if (!$esNocturna)
-<div id="bloque_prueba_admision" class="hidden">
-    <label class="block text-sm font-medium text-gray-700 mb-1">Certificado de prueba de admisión (solo Sétimo)</label>
-    <input type="file" name="doc_prueba_admision" accept=".pdf,.jpg,.jpeg,.png"
-        class="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700">
-    <p class="text-xs text-gray-400 mt-1">PDF, JPG o PNG — máximo 5 MB (opcional)</p>
-    <label class="flex items-center gap-2 text-xs text-gray-600 mt-2">
-        <input type="checkbox" name="fisico_prueba_admision" value="1" onchange="toggleFisico(this, 'doc_prueba_admision')">
-        Lo entrega en físico (no lo adjunta digitalmente)
-    </label>
-</div>
-@endif
+                        @if ($esPlanNacional)
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">PASE *</label>
+                                <input type="file" name="doc_pase" accept=".pdf,.jpg,.jpeg,.png"
+                                    class="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700">
+                                <p class="text-xs text-gray-400 mt-1">PDF, JPG o PNG — máximo 5 MB</p>
+                                <label class="flex items-center gap-2 text-xs text-gray-600 mt-2">
+                                    <input type="checkbox" name="fisico_pase" value="1" onchange="toggleFisico(this, 'doc_pase')">
+                                    Lo entrega en físico (no lo adjunta digitalmente)
+                                </label>
+                            </div>
+                        @endif
 
-    </div>
-</div>
+                        @if (!$esNocturna)
+                            <div id="bloque_prueba_admision" class="hidden">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Certificado de prueba de admisión (solo Sétimo)</label>
+                                <input type="file" name="doc_prueba_admision" accept=".pdf,.jpg,.jpeg,.png"
+                                    class="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700">
+                                <p class="text-xs text-gray-400 mt-1">PDF, JPG o PNG — máximo 5 MB (opcional)</p>
+                                <label class="flex items-center gap-2 text-xs text-gray-600 mt-2">
+                                    <input type="checkbox" name="fisico_prueba_admision" value="1" onchange="toggleFisico(this, 'doc_prueba_admision')">
+                                    Lo entrega en físico (no lo adjunta digitalmente)
+                                </label>
+                            </div>
+                        @endif
+
+                    </div>
+                </div>
+
                 <div class="flex justify-end">
                     <button type="submit"
                         class="bg-blue-700 hover:bg-blue-800 text-white font-medium px-6 py-2.5 rounded-md text-sm">
-                        Enviar prematrícula
+                        Enviar matrícula
                     </button>
                 </div>
             </form>
@@ -553,58 +597,79 @@
     <script>
     const datosNiveles = @json($nivelesJs);
     const esNocturna = {{ $esNocturna ? 'true' : 'false' }};
+    const esPlanNacional = {{ $esPlanNacional ? 'true' : 'false' }};
 
     // ===== Niveles / secciones / talleres / carreras =====
     function cargarOpciones(nivelId) {
-    if (esNocturna) {
-        cargarCarreras(nivelId);
-    } else {
-        cargarSecciones(nivelId);
+        if (esNocturna) {
+            cargarCarreras(nivelId);
+        } else if (esPlanNacional) {
+            cargarSeccionesPlanNacional(nivelId);
+            toggleCicloPlanNacional(nivelId);
+        } else {
+            cargarSecciones(nivelId);
+        }
     }
-    cargarSegundaOpcion(nivelId);
-}
 
-function cargarSegundaOpcion(nivelId) {
-    const select = document.getElementById('segunda_opcion_id');
-    if (!select) return;
+    function cargarCarreras(nivelId) {
+        const carreraSelect = document.getElementById('carrera_id');
+        if (!carreraSelect) return;
 
-    select.innerHTML = '<option value="">Sin segunda opción</option>';
-    if (!nivelId || !datosNiveles[nivelId]) return;
-
-    datosNiveles[nivelId].opciones.forEach(function(op) {
-        const opt = document.createElement('option');
-        opt.value = op.id;
-        opt.textContent = op.nombre;
-        select.appendChild(opt);
-    });
-}function cargarSegundaOpcion(nivelId) {
-    ['segunda_opcion_id', 'tercera_opcion_id', 'cuarta_opcion_id'].forEach(function(id) {
-        const select = document.getElementById(id);
-        if (!select) return;
-
-        select.innerHTML = '<option value="">Sin esta opción</option>';
+        carreraSelect.innerHTML = '<option value="">Seleccionar carrera</option>';
         if (!nivelId || !datosNiveles[nivelId]) return;
 
-        datosNiveles[nivelId].opciones.forEach(function(op) {
+        datosNiveles[nivelId].carreras.forEach(function(c) {
             const opt = document.createElement('option');
-            opt.value = op.id;
-            opt.textContent = op.nombre;
-            select.appendChild(opt);
+            opt.value = c.id;
+            if (c.llena) {
+                opt.textContent = c.nombre + ' — SIN CUPOS';
+                opt.disabled = true;
+                opt.style.color = '#ef4444';
+            } else {
+                opt.textContent = c.nombre + ' (' + c.cupos + ' cupos disponibles)';
+            }
+            carreraSelect.appendChild(opt);
         });
-    });
-}
+    }
 
-function mostrarOpcionExtra(numero) {
-    if (numero === 3) {
-        document.getElementById('bloque_tercera_opcion').style.display = 'block';
-        document.getElementById('btn_mostrar_tercera').classList.add('hidden');
-        document.getElementById('btn_mostrar_cuarta').classList.remove('hidden');
+    function cargarSeccionesPlanNacional(nivelId) {
+        const seccionSelect = document.getElementById('seccion_id');
+        if (!seccionSelect) return;
+
+        seccionSelect.innerHTML = '<option value="">Seleccionar sección</option>';
+        if (!nivelId || !datosNiveles[nivelId]) return;
+
+        datosNiveles[nivelId].secciones.forEach(function(s) {
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.textContent = s.nombre;
+            seccionSelect.appendChild(opt);
+        });
     }
-    if (numero === 4) {
-        document.getElementById('bloque_cuarta_opcion').style.display = 'block';
-        document.getElementById('btn_mostrar_cuarta').classList.add('hidden');
+
+    function toggleCicloPlanNacional(nivelId) {
+        const bloqueBajo = document.getElementById('bloque_bajociclo');
+        const bloqueAlto = document.getElementById('bloque_altociclo');
+        if (!bloqueBajo || !bloqueAlto) return;
+
+        bloqueBajo.classList.add('hidden');
+        bloqueAlto.classList.add('hidden');
+        document.getElementById('tecnica_1').required = false;
+        document.getElementById('formacion_vocacional').required = false;
+
+        if (!nivelId || !datosNiveles[nivelId]) return;
+
+        const numero = String(datosNiveles[nivelId].numero);
+        const esBajoCiclo = ['7', '8', '9'].includes(numero);
+
+        if (esBajoCiclo) {
+            bloqueBajo.classList.remove('hidden');
+            document.getElementById('tecnica_1').required = true;
+        } else {
+            bloqueAlto.classList.remove('hidden');
+            document.getElementById('formacion_vocacional').required = true;
+        }
     }
-}
 
     function cargarSecciones(nivelId) {
         const seccionSelect = document.getElementById('seccion_id');
@@ -646,25 +711,25 @@ function mostrarOpcionExtra(numero) {
 
     // ===== Etiqueta escuela/colegio según nivel =====
     function actualizarLabelColegio() {
-    const label = document.getElementById('label_colegio');
-    const input = document.getElementById('colegio_procedencia');
-    const nivelSelect = document.getElementById('nivel_id');
-    const nivelTexto = nivelSelect.options[nivelSelect.selectedIndex]?.text || '';
-    const esSetimo = nivelTexto.includes('7') || nivelTexto.toLowerCase().includes('sétimo') || nivelTexto.toLowerCase().includes('setimo');
+        const label = document.getElementById('label_colegio');
+        const input = document.getElementById('colegio_procedencia');
+        const nivelSelect = document.getElementById('nivel_id');
+        const nivelTexto = nivelSelect.options[nivelSelect.selectedIndex]?.text || '';
+        const esSetimo = nivelTexto.includes('7') || nivelTexto.toLowerCase().includes('sétimo') || nivelTexto.toLowerCase().includes('setimo');
 
-    if (esSetimo) {
-        label.textContent = 'Escuela de procedencia *';
-        input.placeholder = 'Nombre de la escuela';
-    } else {
-        label.textContent = 'Colegio de procedencia *';
-        input.placeholder = 'Nombre del colegio';
-    }
+        if (esSetimo) {
+            label.textContent = 'Escuela de procedencia *';
+            input.placeholder = 'Nombre de la escuela';
+        } else {
+            label.textContent = 'Colegio de procedencia *';
+            input.placeholder = 'Nombre del colegio';
+        }
 
-    const bloquePrueba = document.getElementById('bloque_prueba_admision');
-    if (bloquePrueba) {
-        bloquePrueba.classList.toggle('hidden', !esSetimo);
+        const bloquePrueba = document.getElementById('bloque_prueba_admision');
+        if (bloquePrueba) {
+            bloquePrueba.classList.toggle('hidden', !esSetimo);
+        }
     }
-}
 
     // ===== Datos geográficos de Costa Rica =====
     const geo = {
@@ -823,42 +888,90 @@ function mostrarOpcionExtra(numero) {
         document.querySelector('[name="tut_poblado"]').value = document.querySelector('[name="est_poblado"]').value;
     }
 
-    // Inicializar al cargar la página
-
     function toggleFisico(checkbox, inputId) {
-    const fileInput = document.getElementById(inputId) || document.querySelector('[name="' + inputId + '"]');
-    const input = document.querySelector('[name="' + inputId + '"]');
-    if (checkbox.checked) {
-        input.value = '';
-        input.disabled = true;
-    } else {
-        input.disabled = false;
+        const input = document.querySelector('[name="' + inputId + '"]');
+        if (checkbox.checked) {
+            input.value = '';
+            input.disabled = true;
+        } else {
+            input.disabled = false;
+        }
     }
-}
-function generarCorreoMep(cedula) {
-    const emailInput = document.getElementById('est_email_mep');
-    if (!emailInput) return;
 
-    // Solo autocompletar si el usuario no ha escrito uno manual distinto al patrón
-    const cedulaLimpia = cedula.replace(/\s+/g, '').trim();
-    if (!cedulaLimpia) {
-        emailInput.value = '';
-        return;
+    function generarCorreoMep(cedula) {
+        const emailInput = document.getElementById('est_email_mep');
+        if (!emailInput) return;
+
+        const cedulaLimpia = cedula.replace(/\s+/g, '').trim();
+        if (!cedulaLimpia) {
+            emailInput.value = '';
+            return;
+        }
+        emailInput.value = cedulaLimpia + '@est.mep.go.cr';
     }
-    emailInput.value = cedulaLimpia + '@est.mep.go.cr';
-}
 
+    function calcularEdad(fechaNacimiento) {
+        const spanEdad = document.getElementById('edad_calculada');
+        if (!fechaNacimiento) {
+            spanEdad.textContent = '';
+            return;
+        }
 
+        const hoy = new Date();
+        const nacimiento = new Date(fechaNacimiento + 'T00:00:00');
+
+        let edad = hoy.getFullYear() - nacimiento.getFullYear();
+        const mesDiferencia = hoy.getMonth() - nacimiento.getMonth();
+
+        if (mesDiferencia < 0 || (mesDiferencia === 0 && hoy.getDate() < nacimiento.getDate())) {
+            edad--;
+        }
+
+        if (edad < 0 || edad > 100) {
+            spanEdad.textContent = '';
+            return;
+        }
+
+        spanEdad.textContent = edad + ' años';
+    }
+
+    function mostrarEncargado(numero) {
+        document.getElementById('bloque_encargado' + numero).classList.remove('hidden');
+        document.getElementById('btn_agregar_encargado' + numero).classList.add('hidden');
+
+        if (numero === 2) {
+            document.getElementById('btn_agregar_encargado3').classList.remove('hidden');
+        }
+    }
+
+    function quitarEncargado(numero) {
+        document.getElementById('bloque_encargado' + numero).classList.add('hidden');
+        document.getElementById('btn_agregar_encargado' + numero).classList.remove('hidden');
+
+        document.querySelectorAll('[name^="tut' + numero + '_"]').forEach(function(input) {
+            input.value = '';
+        });
+
+        const radioPrincipal = document.querySelector('input[name="principal"][value="' + numero + '"]');
+        if (radioPrincipal && radioPrincipal.checked) {
+            document.querySelector('input[name="principal"][value="1"]').checked = true;
+        }
+
+        if (numero === 3) {
+            document.getElementById('btn_agregar_encargado3').classList.add('hidden');
+        }
+    }
 
     document.addEventListener('DOMContentLoaded', function() {
         seleccionarLosChiles('est');
         seleccionarLosChiles('tut');
         actualizarLabelColegio();
 
-const fechaNacimientoInput = document.getElementById('est_nacimiento');
-if (fechaNacimientoInput && fechaNacimientoInput.value) {
-    calcularEdad(fechaNacimientoInput.value);
-}
+        const fechaNacimientoInput = document.getElementById('est_nacimiento');
+        if (fechaNacimientoInput && fechaNacimientoInput.value) {
+            calcularEdad(fechaNacimientoInput.value);
+        }
+
         const form = document.querySelector('form');
         form.addEventListener('submit', function() {
             const estProv = document.getElementById('est_provincia').value;
@@ -876,60 +989,5 @@ if (fechaNacimientoInput && fechaNacimientoInput.value) {
                 [tutProv, tutCant, tutDist, tutPob].filter(Boolean).join(', ');
         });
     });
-
-function calcularEdad(fechaNacimiento) {
-    const spanEdad = document.getElementById('edad_calculada');
-    if (!fechaNacimiento) {
-        spanEdad.textContent = '';
-        return;
-    }
-
-    const hoy = new Date();
-    const nacimiento = new Date(fechaNacimiento + 'T00:00:00');
-
-    let edad = hoy.getFullYear() - nacimiento.getFullYear();
-    const mesDiferencia = hoy.getMonth() - nacimiento.getMonth();
-
-    if (mesDiferencia < 0 || (mesDiferencia === 0 && hoy.getDate() < nacimiento.getDate())) {
-        edad--;
-    }
-
-    if (edad < 0 || edad > 100) {
-        spanEdad.textContent = '';
-        return;
-    }
-
-    spanEdad.textContent = edad + ' años';
-}
-
-function mostrarEncargado(numero) {
-    document.getElementById('bloque_encargado' + numero).classList.remove('hidden');
-    document.getElementById('btn_agregar_encargado' + numero).classList.add('hidden');
-
-    if (numero === 2) {
-        document.getElementById('btn_agregar_encargado3').classList.remove('hidden');
-    }
-}
-
-function quitarEncargado(numero) {
-    document.getElementById('bloque_encargado' + numero).classList.add('hidden');
-    document.getElementById('btn_agregar_encargado' + numero).classList.remove('hidden');
-
-    // Limpiar los campos
-    document.querySelectorAll('[name^="tut' + numero + '_"]').forEach(function(input) {
-        input.value = '';
-    });
-
-    // Si estaba marcado como principal, volver al encargado 1
-    const radioPrincipal = document.querySelector('input[name="principal"][value="' + numero + '"]');
-    if (radioPrincipal && radioPrincipal.checked) {
-        document.querySelector('input[name="principal"][value="1"]').checked = true;
-    }
-
-    if (numero === 3) {
-        document.getElementById('btn_agregar_encargado3').classList.add('hidden');
-    }
-}
-
     </script>
 </x-app-layout>

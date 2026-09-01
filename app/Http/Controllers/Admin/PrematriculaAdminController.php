@@ -164,7 +164,7 @@ public function exportarExcel(Request $request)
         return back()->with('error', "No hay prematrículas registradas para {$periodo->nombre} — {$modalidad->nombre}.");
     }
 
-    $nombre = 'prematriculas-' . str($periodo->nombre)->slug() . '-' . str($modalidad->nombre)->slug() . '.xlsx';
+    $nombre = 'Matriculas-' . str($periodo->nombre)->slug() . '-' . str($modalidad->nombre)->slug() . '.xlsx';
 
     return Excel::download(
         new PrematriculasExport($validado['periodo_id'], $validado['modalidad_id']),

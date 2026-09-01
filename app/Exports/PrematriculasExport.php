@@ -19,9 +19,9 @@ class PrematriculasExport implements WithMultipleSheets
     {
         $sheets = [];
         $modalidad = Modalidad::find($this->modalidadId);
-        $esDiurna = $modalidad && $modalidad->nombre === 'Diurna';
+        $nombreModalidad = $modalidad?->nombre;
 
-        if ($esDiurna) {
+        if ($nombreModalidad === 'Diurna') {
             // Hojas por sección (Diurna)
             $seccionIds = Prematricula::where('periodo_id', $this->periodoId)
                 ->where('modalidad_id', $this->modalidadId)
@@ -47,8 +47,36 @@ class PrematriculasExport implements WithMultipleSheets
             if ($sinSeccion > 0) {
                 $sheets[] = new SinSeccionSheet($this->periodoId, $this->modalidadId);
             }
+
+        } elseif ($nombreModalidad === 'Plan Nacional') {
+            // Hojas por sección (Plan Nacional, con campos propios)
+            $seccionIds = Prematricula::where('periodo_id', $this->periodoId)
+                ->where('modalidad_id', $this->modalidadId)
+                ->whereNotNull('seccion_id')
+                ->pluck('seccion_id')
+                ->unique();
+
+            $secciones = Seccion::with(['nivel'])
+                ->whereIn('id', $seccionIds)
+                ->orderBy('nivel_id')
+                ->orderBy('numero')
+                ->get();
+
+            foreach ($secciones as $seccion) {
+                $sheets[] = new PlanNacionalSheet($seccion, $this->periodoId, $this->modalidadId);
+            }
+
+            $sinSeccion = Prematricula::where('periodo_id', $this->periodoId)
+                ->where('modalidad_id', $this->modalidadId)
+                ->whereNull('seccion_id')
+                ->count();
+
+            if ($sinSeccion > 0) {
+                $sheets[] = new SinSeccionSheet($this->periodoId, $this->modalidadId);
+            }
+
         } else {
-            // Hojas por carrera técnica (Nocturna / Plan Nacional)
+            // Hojas por carrera técnica (Nocturna)
             $carreraIds = Prematricula::where('periodo_id', $this->periodoId)
                 ->where('modalidad_id', $this->modalidadId)
                 ->whereNotNull('carrera_id')

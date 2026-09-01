@@ -40,7 +40,6 @@ class SeccionSheet implements FromCollection, WithHeadings, WithTitle, WithStyle
             'Sección',
             'Grupo',
             'Taller',
-            'Segunda opción',
             'Centro educativo de procedencia',
             'Encargado principal',
             'Relación',
@@ -73,14 +72,12 @@ class SeccionSheet implements FromCollection, WithHeadings, WithTitle, WithStyle
             $enc2 = $encargados->get(1);
             $enc3 = $encargados->get(2);
 
-            $segundaOpcion = $p->tallerSegundaOpcion
-                ? $p->tallerSegundaOpcion->seccion->nombre . ' - ' . $p->tallerSegundaOpcion->nombre . ' (Grupo ' . $p->tallerSegundaOpcion->grupo . ')'
-                : '—';
+          
 
-            $documentos = $p->documentos->map(function ($d) {
-                $estado = $d->entregado_fisico ? 'físico' : 'digital';
-                return ucfirst(str_replace('_', ' ', $d->tipo)) . ' (' . $estado . ')';
-            })->implode('; ');
+           $documentos = $p->documentos->map(function ($d) {
+    $estado = $d->entregado_fisico ? 'agregado en físico' : 'agregado en digital';
+    return ucfirst(str_replace('_', ' ', $d->tipo)) . ' (' . $estado . ')';
+})->implode('; ');
 
             return [
                 $i + 1,
@@ -96,7 +93,6 @@ class SeccionSheet implements FromCollection, WithHeadings, WithTitle, WithStyle
                 $p->seccion->nombre ?? '—',
                 'Grupo ' . $p->grupo_taller,
                 $taller?->nombre ?? '—',
-                $segundaOpcion,
                 $p->colegio_procedencia,
                 $p->tutor->nombre_completo,
                 $p->tutor->relacion,
@@ -124,13 +120,13 @@ class SeccionSheet implements FromCollection, WithHeadings, WithTitle, WithStyle
     }
 
     public function columnWidths(): array
-    {
-        return [
-            'A' => 5,  'B' => 12, 'C' => 28, 'D' => 14, 'E' => 7,  'F' => 16,
-            'G' => 10, 'H' => 22, 'I' => 26, 'J' => 14, 'K' => 10, 'L' => 10,
-            'M' => 15, 'N' => 28, 'O' => 24, 'P' => 24, 'Q' => 14, 'R' => 14,
-            'S' => 26, 'T' => 22, 'U' => 14, 'V' => 22, 'W' => 14, 'X' => 35,
-            'Y' => 12, 'Z' => 18,
-        ];
-    }
+{
+    return [
+        'A' => 5,  'B' => 12, 'C' => 28, 'D' => 14, 'E' => 7,  'F' => 16,
+        'G' => 10, 'H' => 22, 'I' => 26, 'J' => 14, 'K' => 10, 'L' => 10,
+        'M' => 15, 'N' => 24, 'O' => 24, 'P' => 14, 'Q' => 14,
+        'R' => 26, 'S' => 22, 'T' => 14, 'U' => 22, 'V' => 14, 'W' => 35,
+        'X' => 12, 'Y' => 18,
+    ];
+}
 }

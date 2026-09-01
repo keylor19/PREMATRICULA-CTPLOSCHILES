@@ -52,11 +52,11 @@ class ConfiguracionController extends Controller
             ]
         );
 
-        // Solo generar secciones para modalidades con secciones (Diurna)
-        $modalidad = Modalidad::find($validado['modalidad_id']);
-        if ($modalidad->nombre === 'Diurna' && $validado['seccion_inicio'] && $validado['seccion_fin']) {
-            $nivel->generarSecciones();
-        }
+        // Generar secciones para modalidades que las usan (Diurna y Plan Nacional)
+$modalidad = Modalidad::find($validado['modalidad_id']);
+if (in_array($modalidad->nombre, ['Diurna', 'Plan Nacional']) && $validado['seccion_inicio'] && $validado['seccion_fin']) {
+    $nivel->generarSecciones();
+}
 
         return back()->with('success', "Nivel {$nivel->nombre} configurado correctamente.");
     }

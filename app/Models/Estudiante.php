@@ -17,6 +17,9 @@ class Estudiante extends Model
     'direccion',
     'condicion_salud',
     'adecuacion',
+    'tipo_discapacidad',
+    'boleta_ubicacion',
+    'nivel_funcionamiento',
 ];
 
     protected $casts = [

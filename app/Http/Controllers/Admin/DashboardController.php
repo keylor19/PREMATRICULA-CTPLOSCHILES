@@ -46,9 +46,11 @@ class DashboardController extends Controller
                 : $modalidades;
 
             foreach ($modalidadesAProcesar as $mod) {
-                $esDiurna = $mod->nombre === 'Diurna';
-                $porSeccion = [];
-                $porCarrera = [];
+                $esDiurna       = $mod->nombre === 'Diurna';
+                $esPlanNacional = $mod->nombre === 'Plan Nacional';
+                $porSeccion     = [];
+                $porCarrera     = [];
+                $porSeccionPN   = [];
 
                 if ($esDiurna) {
                     $secciones = Seccion::with(['nivel', 'talleres'])
@@ -88,7 +90,31 @@ class DashboardController extends Controller
                             'total'       => $grupoA + $grupoB,
                         ];
                     }
+                } elseif ($esPlanNacional) {
+                    // Plan Nacional: por sección, sin cupos (solo cuenta matriculados)
+                    $secciones = Seccion::with(['nivel'])
+                        ->whereHas('prematriculas', function($q) use ($periodo, $mod) {
+                            $q->where('periodo_id', $periodo->id)
+                              ->where('modalidad_id', $mod->id);
+                        })
+                        ->orderBy('nivel_id')
+                        ->orderBy('numero')
+                        ->get();
+
+                    foreach ($secciones as $seccion) {
+                        $matriculados = Prematricula::where('periodo_id', $periodo->id)
+                            ->where('seccion_id', $seccion->id)
+                            ->where('modalidad_id', $mod->id)
+                            ->count();
+
+                        $porSeccionPN[] = [
+                            'nivel'        => $seccion->nivel->nombre ?? '—',
+                            'seccion'      => $seccion->nombre,
+                            'matriculados' => $matriculados,
+                        ];
+                    }
                 } else {
+                    // Nocturna: por carrera técnica
                     $carreras = Carrera::with(['nivel'])
                         ->where('modalidad_id', $mod->id)
                         ->where('activa', true)
@@ -121,13 +147,15 @@ class DashboardController extends Controller
                     ->count();
 
                 // Solo agregar el bloque si tiene datos configurados o prematrículas
-                if (count($porSeccion) > 0 || count($porCarrera) > 0 || $totalModalidad > 0) {
+                if (count($porSeccion) > 0 || count($porCarrera) > 0 || count($porSeccionPN) > 0 || $totalModalidad > 0) {
                     $bloques[] = [
-                        'modalidad'  => $mod->nombre,
-                        'esDiurna'   => $esDiurna,
-                        'total'      => $totalModalidad,
-                        'porSeccion' => $porSeccion,
-                        'porCarrera' => $porCarrera,
+                        'modalidad'      => $mod->nombre,
+                        'esDiurna'       => $esDiurna,
+                        'esPlanNacional' => $esPlanNacional,
+                        'total'          => $totalModalidad,
+                        'porSeccion'     => $porSeccion,
+                        'porCarrera'     => $porCarrera,
+                        'porSeccionPN'   => $porSeccionPN,
                     ];
                 }
             }

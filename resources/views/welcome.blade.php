@@ -175,7 +175,7 @@
                         </a>
                     @else
                         <a href="{{ route('login') }}" class="nav-link">
-                            Log in Prematrícula
+                            Iniciar Matrícula
                         </a>
                     @endauth
                 </nav>
@@ -199,7 +199,7 @@
                 </h1>
 
                 <p class="subtitle">
-                    Sistema institucional para la gestión académica en Prematricula y Matricula Estudiantil.
+                    Sistema institucional para la gestión académica  y Matricula Estudiantil.
                 </p>
 
                 <p class="footer-text">
