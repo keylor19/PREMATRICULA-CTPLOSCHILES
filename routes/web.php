@@ -50,7 +50,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/prematriculas/{prematricula}/editar', [PrematriculaAdminController::class, 'edit'])->name('prematriculas.edit');
     Route::put('/prematriculas/{prematricula}', [PrematriculaAdminController::class, 'update'])->name('prematriculas.update');
     Route::delete('/prematriculas/{prematricula}', [PrematriculaAdminController::class, 'destroy'])->name('prematriculas.destroy');
-    Route::post('/prematriculas/{prematricula}/decidir', [PrematriculaAdminController::class, 'decidir'])->name('prematriculas.decidir');
+    //Route::post('/prematriculas/{prematricula}/decidir', [PrematriculaAdminController::class, 'decidir'])->name('prematriculas.decidir');
 
     // Configuración — general
     Route::get('/configuracion', [\App\Http\Controllers\Admin\ConfiguracionController::class, 'index'])->name('configuracion.index');
@@ -77,6 +77,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/periodos', [\App\Http\Controllers\Admin\PeriodoController::class, 'index'])->name('periodos.index');
     Route::post('/periodos', [\App\Http\Controllers\Admin\PeriodoController::class, 'store'])->name('periodos.store');
     Route::post('/periodos/{periodo}/activar', [\App\Http\Controllers\Admin\PeriodoController::class, 'activar'])->name('periodos.activar');
+    Route::post('/periodos/{periodo}/reabrir', [\App\Http\Controllers\Admin\PeriodoController::class, 'reabrir'])->name('periodos.reabrir');
     Route::post('/periodos/{periodo}/cerrar', [\App\Http\Controllers\Admin\PeriodoController::class, 'cerrar'])->name('periodos.cerrar');
     Route::delete('/periodos/{periodo}', [\App\Http\Controllers\Admin\PeriodoController::class, 'destroy'])->name('periodos.destroy');
 

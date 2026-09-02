@@ -33,7 +33,7 @@
             {{-- Período activo --}}
             @if ($periodoActivo)
                 <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <div class="flex items-center justify-between">
+                    <div class="flex items-center justify-between flex-wrap gap-3">
                         <div>
                             <p class="text-sm font-semibold text-green-800">✓ Período activo: {{ $periodoActivo->nombre }}</p>
                             <p class="text-xs text-green-600 mt-1">
@@ -42,16 +42,28 @@
                                 @if ($periodoActivo->estaAbierto())
                                     <span class="font-medium">Abierto para prematrículas</span>
                                 @else
-                                    <span class="font-medium text-yellow-700">Fuera de fechas (cerrado)</span>
+                                    <span class="font-medium text-yellow-700">Fuera de fechas (vencido)</span>
                                 @endif
                             </p>
                         </div>
-                        <form method="POST" action="{{ route('admin.periodos.cerrar', $periodoActivo) }}">
-                            @csrf
-                            <button type="submit" class="text-xs bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 rounded-md font-medium">
-                                Cerrar período
-                            </button>
-                        </form>
+                        <div class="flex items-center gap-3">
+                            @if ($periodoActivo->estaVencido())
+                                <form method="POST" action="{{ route('admin.periodos.reabrir', $periodoActivo) }}" class="flex items-center gap-2">
+                                    @csrf
+                                    <input type="date" name="nueva_fecha_fin" required min="{{ now()->addDay()->toDateString() }}"
+                                        class="rounded-md border-gray-300 shadow-sm text-xs px-2 py-1">
+                                    <button type="submit" class="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1.5 rounded-md font-medium whitespace-nowrap">
+                                        Reabrir con nueva fecha
+                                    </button>
+                                </form>
+                            @endif
+                            <form method="POST" action="{{ route('admin.periodos.cerrar', $periodoActivo) }}">
+                                @csrf
+                                <button type="submit" class="text-xs bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 rounded-md font-medium">
+                                    Cerrar período
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             @else
@@ -121,19 +133,32 @@
                                 <td class="px-4 py-3 text-sm">
                                     @if ($periodo->activo)
                                         <span class="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">Activo</span>
+                                    @elseif ($periodo->estaVencido())
+                                        <span class="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-yellow-50 text-yellow-700 border border-yellow-200">Vencido</span>
                                     @else
                                         <span class="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Cerrado</span>
                                     @endif
                                 </td>
                                 <td class="px-4 py-3 text-sm text-right">
-                                    <div class="flex justify-end gap-3">
+                                    <div class="flex justify-end items-center gap-3 flex-wrap">
                                         @if (!$periodo->activo)
-                                            <form method="POST" action="{{ route('admin.periodos.activar', $periodo) }}">
-                                                @csrf
-                                                <button type="submit" class="text-xs text-green-600 hover:text-green-800 font-medium">
-                                                    Activar
-                                                </button>
-                                            </form>
+                                            @if ($periodo->estaVencido())
+                                                <form method="POST" action="{{ route('admin.periodos.reabrir', $periodo) }}" class="flex items-center gap-2">
+                                                    @csrf
+                                                    <input type="date" name="nueva_fecha_fin" required min="{{ now()->addDay()->toDateString() }}"
+                                                        class="rounded-md border-gray-300 shadow-sm text-xs px-2 py-1 w-32">
+                                                    <button type="submit" class="text-xs text-blue-600 hover:text-blue-800 font-medium whitespace-nowrap">
+                                                        Reabrir
+                                                    </button>
+                                                </form>
+                                            @else
+                                                <form method="POST" action="{{ route('admin.periodos.activar', $periodo) }}">
+                                                    @csrf
+                                                    <button type="submit" class="text-xs text-green-600 hover:text-green-800 font-medium">
+                                                        Activar
+                                                    </button>
+                                                </form>
+                                            @endif
                                             <form method="POST" action="{{ route('admin.periodos.destroy', $periodo) }}"
                                                 onsubmit="return confirm('¿Seguro? Solo se puede eliminar si no tiene prematrículas.')">
                                                 @csrf

@@ -168,9 +168,108 @@
                     </div>
                 </div>
 
+                {{-- Datos del padre y la madre (opcional) --}}
+                <div class="bg-white shadow-sm rounded-lg p-6 border border-gray-200">
+                    <h3 class="text-base font-semibold text-gray-900 mb-1">Datos del padre y la madre</h3>
+                    <p class="text-xs text-gray-400 mb-4">
+                        Estos datos son opcionales. Si el padre o la madre es también uno de los encargados legales,
+                        podés usar el botón "Usar estos datos" dentro de cada encargado más abajo para no volver a escribirlos.
+                    </p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {{-- Padre --}}
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <h4 class="text-sm font-semibold text-gray-900 mb-3">Padre</h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
+                                    <input type="text" name="padre_nombre" value="{{ old('padre_nombre') }}"
+                                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Cédula</label>
+                                    <input type="text" name="padre_cedula" value="{{ old('padre_cedula') }}"
+                                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                                        <input type="tel" name="padre_telefono" value="{{ old('padre_telefono') }}"
+                                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Tel. secundario</label>
+                                        <input type="tel" name="padre_telefono2" value="{{ old('padre_telefono2') }}"
+                                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+                                    <input type="email" name="padre_email" value="{{ old('padre_email') }}"
+                                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Ocupación</label>
+                                    <input type="text" name="padre_ocupacion" value="{{ old('padre_ocupacion') }}"
+                                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
+                                    <textarea name="padre_direccion" rows="2"
+                                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">{{ old('padre_direccion') }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Madre --}}
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <h4 class="text-sm font-semibold text-gray-900 mb-3">Madre</h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
+                                    <input type="text" name="madre_nombre" value="{{ old('madre_nombre') }}"
+                                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Cédula</label>
+                                    <input type="text" name="madre_cedula" value="{{ old('madre_cedula') }}"
+                                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                                        <input type="tel" name="madre_telefono" value="{{ old('madre_telefono') }}"
+                                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Tel. secundario</label>
+                                        <input type="tel" name="madre_telefono2" value="{{ old('madre_telefono2') }}"
+                                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+                                    <input type="email" name="madre_email" value="{{ old('madre_email') }}"
+                                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Ocupación</label>
+                                    <input type="text" name="madre_ocupacion" value="{{ old('madre_ocupacion') }}"
+                                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
+                                    <textarea name="madre_direccion" rows="2"
+                                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">{{ old('madre_direccion') }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {{-- Datos de los encargados --}}
                 <div class="bg-white shadow-sm rounded-lg p-6 border border-gray-200">
-                    <h3 class="text-base font-semibold text-gray-900 mb-1">Datos del padre / madre / tutor</h3>
+                    <h3 class="text-base font-semibold text-gray-900 mb-1">Datos del encargado legal</h3>
                     <p class="text-xs text-gray-400 mb-4">Podés agregar hasta 3 encargados. Marcá cuál es el principal (recibe correos y firma el documento).</p>
 
                     {{-- Encargado 1 (obligatorio) --}}
@@ -181,6 +280,14 @@
                                 <input type="radio" name="principal" value="1" checked>
                                 Marcar como principal
                             </label>
+                        </div>
+                        <div class="flex gap-4 mb-3">
+                            <button type="button" onclick="copiarDatosFamiliar(1, 'padre')" class="text-xs text-green-700 hover:text-green-900 font-medium">
+                                ↳ Usar datos del Padre
+                            </button>
+                            <button type="button" onclick="copiarDatosFamiliar(1, 'madre')" class="text-xs text-pink-700 hover:text-pink-900 font-medium">
+                                ↳ Usar datos de la Madre
+                            </button>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -287,6 +394,14 @@
                                 <button type="button" onclick="quitarEncargado(2)" class="text-xs text-red-500 hover:text-red-700">Quitar</button>
                             </div>
                         </div>
+                        <div class="flex gap-4 mb-3">
+                            <button type="button" onclick="copiarDatosFamiliar(2, 'padre')" class="text-xs text-green-700 hover:text-green-900 font-medium">
+                                ↳ Usar datos del Padre
+                            </button>
+                            <button type="button" onclick="copiarDatosFamiliar(2, 'madre')" class="text-xs text-pink-700 hover:text-pink-900 font-medium">
+                                ↳ Usar datos de la Madre
+                            </button>
+                        </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
@@ -341,6 +456,14 @@
                                 </label>
                                 <button type="button" onclick="quitarEncargado(3)" class="text-xs text-red-500 hover:text-red-700">Quitar</button>
                             </div>
+                        </div>
+                        <div class="flex gap-4 mb-3">
+                            <button type="button" onclick="copiarDatosFamiliar(3, 'padre')" class="text-xs text-green-700 hover:text-green-900 font-medium">
+                                ↳ Usar datos del Padre
+                            </button>
+                            <button type="button" onclick="copiarDatosFamiliar(3, 'madre')" class="text-xs text-pink-700 hover:text-pink-900 font-medium">
+                                ↳ Usar datos de la Madre
+                            </button>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -598,6 +721,27 @@
     const datosNiveles = @json($nivelesJs);
     const esNocturna = {{ $esNocturna ? 'true' : 'false' }};
     const esPlanNacional = {{ $esPlanNacional ? 'true' : 'false' }};
+
+    // ===== Copiar datos de Padre/Madre a un encargado legal =====
+    function copiarDatosFamiliar(numeroEncargado, tipo) {
+        const sufijo = numeroEncargado === 1 ? '' : numeroEncargado;
+        const campo = (nombreCampo) => document.querySelector('[name="tut' + sufijo + '_' + nombreCampo + '"]');
+
+        const origen = (nombreCampo) => {
+            const el = document.querySelector('[name="' + tipo + '_' + nombreCampo + '"]');
+            return el ? el.value : '';
+        };
+
+        if (campo('nombre'))    campo('nombre').value    = origen('nombre');
+        if (campo('cedula'))    campo('cedula').value    = origen('cedula');
+        if (campo('telefono'))  campo('telefono').value  = origen('telefono');
+        if (campo('telefono2')) campo('telefono2').value = origen('telefono2');
+        if (campo('email'))     campo('email').value     = origen('email');
+        if (campo('ocupacion')) campo('ocupacion').value = origen('ocupacion');
+
+        const relacionSelect = document.querySelector('[name="tut' + sufijo + '_relacion"]');
+        if (relacionSelect) relacionSelect.value = tipo === 'padre' ? 'Padre' : 'Madre';
+    }
 
     // ===== Niveles / secciones / talleres / carreras =====
     function cargarOpciones(nivelId) {
@@ -865,6 +1009,7 @@
 
     function seleccionarLosChiles(prefix) {
         const provinciaSelect = document.getElementById(prefix + '_provincia');
+        if (!provinciaSelect) return;
         provinciaSelect.value = 'Alajuela';
         cargarCantones(prefix, 'Alajuela');
 

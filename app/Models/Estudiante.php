@@ -30,4 +30,8 @@ class Estudiante extends Model
     {
         return $this->hasOne(Prematricula::class);
     }
+    public function familiares()
+{
+    return $this->hasMany(Familiar::class);
+}
 }

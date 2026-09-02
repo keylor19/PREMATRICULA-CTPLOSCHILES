@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Prematricula;
 use App\Models\Estudiante;
 use App\Models\Tutor;
+use App\Models\Familiar;
 use App\Models\Documento;
 use App\Models\Nivel;
 use App\Models\Periodo;
@@ -221,6 +222,23 @@ class PrematriculaController extends Controller
         'tut3_email'     => 'nullable|email',
         'tut3_ocupacion' => 'nullable|string',
 
+        // Padre / Madre (siempre opcionales)
+        'padre_nombre'    => 'nullable|string|max:150',
+        'padre_cedula'    => 'nullable|string|max:50',
+        'padre_telefono'  => 'nullable|string|max:50',
+        'padre_telefono2' => 'nullable|string|max:50',
+        'padre_email'     => 'nullable|email',
+        'padre_ocupacion' => 'nullable|string|max:150',
+        'padre_direccion' => 'nullable|string',
+
+        'madre_nombre'    => 'nullable|string|max:150',
+        'madre_cedula'    => 'nullable|string|max:50',
+        'madre_telefono'  => 'nullable|string|max:50',
+        'madre_telefono2' => 'nullable|string|max:50',
+        'madre_email'     => 'nullable|email',
+        'madre_ocupacion' => 'nullable|string|max:150',
+        'madre_direccion' => 'nullable|string',
+
         'nivel_id'              => 'required|exists:niveles,id',
         'seccion_id'            => 'nullable|exists:secciones,id',
         'grupo_taller'          => 'nullable|string|in:A,B',
@@ -301,6 +319,35 @@ $estudiante = Estudiante::create([
             $validado['est_poblado'],
         ])),
     ]);
+
+    // Padre y Madre — se crean solo si se llenó al menos el nombre (son opcionales)
+    if (!empty($validado['padre_nombre'])) {
+        Familiar::create([
+            'estudiante_id'       => $estudiante->id,
+            'tipo'                => 'padre',
+            'nombre_completo'     => $validado['padre_nombre'],
+            'cedula'              => $validado['padre_cedula'] ?? null,
+            'telefono_principal'  => $validado['padre_telefono'] ?? null,
+            'telefono_secundario' => $validado['padre_telefono2'] ?? null,
+            'email'               => $validado['padre_email'] ?? null,
+            'ocupacion'           => $validado['padre_ocupacion'] ?? null,
+            'direccion'           => $validado['padre_direccion'] ?? null,
+        ]);
+    }
+
+    if (!empty($validado['madre_nombre'])) {
+        Familiar::create([
+            'estudiante_id'       => $estudiante->id,
+            'tipo'                => 'madre',
+            'nombre_completo'     => $validado['madre_nombre'],
+            'cedula'              => $validado['madre_cedula'] ?? null,
+            'telefono_principal'  => $validado['madre_telefono'] ?? null,
+            'telefono_secundario' => $validado['madre_telefono2'] ?? null,
+            'email'               => $validado['madre_email'] ?? null,
+            'ocupacion'           => $validado['madre_ocupacion'] ?? null,
+            'direccion'           => $validado['madre_direccion'] ?? null,
+        ]);
+    }
 
     $direccionTutor = implode(', ', array_filter([
         $validado['tut_provincia'],
@@ -470,26 +517,29 @@ if ($esPlanNacional) {
         }
     }
 
+    // Primero generamos el PDF, así ya existe en disco para adjuntarlo al correo
+    $rutaPdf = null;
     try {
-        $destinatarios = collect($tutoresCreados)->pluck('email')->filter()->unique();
+        $prematricula->load(['estudiante', 'estudiante.familiares', 'tutor', 'tutores', 'documentos', 'nivel', 'seccion', 'periodo', 'modalidad', 'carrera', 'user']);
+        $rutaPdf = \App\Services\BoletaPdfBuilder::generar($prematricula);
+    } catch (\Exception $e) {
+        // Si el PDF falla, igual seguimos e intentamos mandar el correo sin adjunto
+    }
+
+    try {
+        $destinatarios = collect([$tutor->email]);
 
         if (!empty($estudiante->email_mep)) {
             $destinatarios->push($estudiante->email_mep);
         }
 
-        Mail::to($tutor->email)
-            ->cc($destinatarios->reject(fn($email) => $email === $tutor->email)->all())
-            ->send(new PrematriculaRecibida($prematricula));
+        $destinatarios = $destinatarios->filter()->unique()->values();
+
+        Mail::to($destinatarios->first())
+            ->cc($destinatarios->slice(1)->all())
+            ->send(new PrematriculaRecibida($prematricula, $rutaPdf));
     } catch (\Exception $e) {
         // Si el correo falla no interrumpimos el flujo
-    }
-
-   try {
-    $prematricula->load(['estudiante', 'tutor', 'tutores', 'documentos', 'nivel', 'seccion', 'periodo', 'modalidad', 'carrera', 'user']);
-    \App\Services\BoletaPdfBuilder::generar($prematricula);
-} catch (\Exception $e) {
-    // Si el PDF falla no interrumpimos el flujo
-
     }
 
     return redirect()->route('prematricula.index')
@@ -502,7 +552,7 @@ public function descargarPdf(Prematricula $prematricula)
         abort(403, 'No tenés permiso para descargar este documento.');
     }
 
-    $prematricula->load(['estudiante', 'tutor', 'tutores', 'documentos', 'nivel', 'seccion', 'periodo', 'modalidad', 'carrera', 'user']);
+    $prematricula->load(['estudiante', 'estudiante.familiares', 'tutor', 'tutores', 'documentos', 'nivel', 'seccion', 'periodo', 'modalidad', 'carrera', 'user']);
 
     $ruta = \App\Services\BoletaPdfBuilder::generar($prematricula);
 
@@ -515,7 +565,14 @@ public function reenviarCorreo(Prematricula $prematricula)
         abort(403, 'No tenés permiso para esta acción.');
     }
 
-    $prematricula->load(['estudiante', 'tutor']);
+    $prematricula->load(['estudiante', 'estudiante.familiares', 'tutor', 'tutores', 'documentos', 'nivel', 'seccion', 'periodo', 'modalidad', 'carrera', 'user']);
+
+    $rutaPdf = null;
+    try {
+        $rutaPdf = \App\Services\BoletaPdfBuilder::generar($prematricula);
+    } catch (\Exception $e) {
+        // Si el PDF falla, igual intentamos enviar el correo sin adjunto
+    }
 
     try {
         $destinatarios = collect([$prematricula->tutor->email]);
@@ -524,9 +581,11 @@ public function reenviarCorreo(Prematricula $prematricula)
             $destinatarios->push($prematricula->estudiante->email_mep);
         }
 
+        $destinatarios = $destinatarios->filter()->unique()->values();
+
         Mail::to($destinatarios->first())
             ->cc($destinatarios->slice(1)->all())
-            ->send(new PrematriculaRecibida($prematricula));
+            ->send(new PrematriculaRecibida($prematricula, $rutaPdf));
 
         return back()->with('success', 'Correo reenviado correctamente a ' . $destinatarios->implode(', '));
     } catch (\Exception $e) {

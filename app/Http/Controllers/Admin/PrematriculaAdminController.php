@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Prematricula;
 use App\Models\Nivel;
 use App\Models\Modalidad;
-use App\Mail\PrematriculaDecidida;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -19,9 +18,6 @@ class PrematriculaAdminController extends Controller
     public function index(Request $request)
     {
         $solicitudes = Prematricula::with(['estudiante', 'tutor', 'nivel', 'seccion', 'modalidad', 'periodo'])
-            ->when($request->estado, function ($query) use ($request) {
-                $query->where('estado', $request->estado);
-            })
             ->when($request->modalidad_id, function ($query) use ($request) {
                 $query->where('modalidad_id', $request->modalidad_id);
             })
@@ -118,7 +114,7 @@ class PrematriculaAdminController extends Controller
         ]);
 
         return redirect()->route('admin.prematriculas.show', $prematricula)
-            ->with('success', 'Prematrícula actualizada correctamente.');
+            ->with('success', 'Matrícula actualizada correctamente.');
     }
 
     public function destroy(Prematricula $prematricula)
@@ -142,68 +138,33 @@ class PrematriculaAdminController extends Controller
         \App\Models\Tutor::find($tutorId)?->delete();
 
         return redirect()->route('admin.prematriculas.index')
-            ->with('success', 'Prematrícula eliminada correctamente. El cupo ha sido liberado.');
+            ->with('success', 'Matrícula eliminada correctamente. El cupo ha sido liberado.');
     }
 
 
-public function exportarExcel(Request $request)
-{
-    $validado = $request->validate([
-        'periodo_id'   => 'required|exists:periodos,id',
-        'modalidad_id' => 'required|exists:modalidades,id',
-    ]);
-
-    $periodo   = Periodo::find($validado['periodo_id']);
-    $modalidad = Modalidad::find($validado['modalidad_id']);
-
-    $total = Prematricula::where('periodo_id', $validado['periodo_id'])
-        ->where('modalidad_id', $validado['modalidad_id'])
-        ->count();
-
-    if ($total === 0) {
-        return back()->with('error', "No hay prematrículas registradas para {$periodo->nombre} — {$modalidad->nombre}.");
-    }
-
-    $nombre = 'Matriculas-' . str($periodo->nombre)->slug() . '-' . str($modalidad->nombre)->slug() . '.xlsx';
-
-    return Excel::download(
-        new PrematriculasExport($validado['periodo_id'], $validado['modalidad_id']),
-        $nombre
-    );
-
-}
-
-
-
-    public function decidir(Request $request, Prematricula $prematricula)
+    public function exportarExcel(Request $request)
     {
         $validado = $request->validate([
-            'estado'     => 'required|in:aprobada,rechazada',
-            'nota_admin' => 'nullable|string|max:500',
+            'periodo_id'   => 'required|exists:periodos,id',
+            'modalidad_id' => 'required|exists:modalidades,id',
         ]);
 
-        $prematricula->update([
-            'estado'         => $validado['estado'],
-            'nota_admin'     => $validado['nota_admin'] ?? null,
-            'fecha_decision' => now(),
-        ]);
+        $periodo   = Periodo::find($validado['periodo_id']);
+        $modalidad = Modalidad::find($validado['modalidad_id']);
 
-    try {
-    $destinatarios = collect([$prematricula->tutor->email]);
+        $total = Prematricula::where('periodo_id', $validado['periodo_id'])
+            ->where('modalidad_id', $validado['modalidad_id'])
+            ->count();
 
-    if (!empty($prematricula->estudiante->email_mep)) {
-        $destinatarios->push($prematricula->estudiante->email_mep);
-    }
+        if ($total === 0) {
+            return back()->with('error', "No hay matrículas registradas para {$periodo->nombre} — {$modalidad->nombre}.");
+        }
 
-    Mail::to($destinatarios->first())
-        ->cc($destinatarios->slice(1)->all())
-        ->send(new PrematriculaDecidida($prematricula));
-} catch (\Exception $e) {
-    // Si el correo falla no interrumpimos el flujo
-}
+        $nombre = 'Matriculas-' . str($periodo->nombre)->slug() . '-' . str($modalidad->nombre)->slug() . '.xlsx';
 
-        
-
-        return back()->with('success', 'Decisión guardada y notificación enviada.');
+        return Excel::download(
+            new PrematriculasExport($validado['periodo_id'], $validado['modalidad_id']),
+            $nombre
+        );
     }
 }

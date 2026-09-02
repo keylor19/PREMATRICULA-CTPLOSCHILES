@@ -50,4 +50,12 @@ class Periodo extends Model
             && $this->fecha_inicio->toDateString() <= $hoy
             && $this->fecha_fin->toDateString() >= $hoy;
     }
+
+    /**
+     * Verifica si la fecha de cierre del período ya pasó.
+     */
+    public function estaVencido(): bool
+    {
+        return $this->fecha_fin->toDateString() < now()->toDateString();
+    }
 }
