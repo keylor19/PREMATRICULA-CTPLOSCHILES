@@ -14,6 +14,8 @@ class Estudiante extends Model
     'genero',
     'nacionalidad',
     'email_mep',
+    'email_personal',
+    'telefono',
     'direccion',
     'condicion_salud',
     'adecuacion',
@@ -30,8 +32,9 @@ class Estudiante extends Model
     {
         return $this->hasOne(Prematricula::class);
     }
+
     public function familiares()
-{
-    return $this->hasMany(Familiar::class);
-}
+    {
+        return $this->hasMany(Familiar::class);
+    }
 }

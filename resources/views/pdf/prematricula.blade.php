@@ -83,9 +83,16 @@
 
         @php
             $esPlanNacionalPdf = $prematricula->modalidad && $prematricula->modalidad->nombre === 'Plan Nacional';
+            $esNocturnaModalidad = $prematricula->modalidad && $prematricula->modalidad->nombre === 'Nocturna';
             $esNocturnaPdf = !$esPlanNacionalPdf && $prematricula->carrera_id !== null;
             $tallerA = $prematricula->seccion?->talleres->where('grupo', 'A')->first();
             $tallerB = $prematricula->seccion?->talleres->where('grupo', 'B')->first();
+
+            // Nocturna + estudiante mayor de edad: no se muestran padre/madre ni encargado
+            $edadEstudiantePdf = $prematricula->estudiante && $prematricula->estudiante->fecha_nacimiento
+                ? \Carbon\Carbon::parse($prematricula->estudiante->fecha_nacimiento)->age
+                : null;
+            $ocultarEncargadosPdf = $esNocturnaModalidad && $edadEstudiantePdf !== null && $edadEstudiantePdf >= 18;
         @endphp
 
         <div class="titulo-principal">
@@ -126,26 +133,6 @@
                 @endif
             </table>
 
-       {{-- @elseif ($esNocturnaPdf)
-            <table class="nivel-info">
-                <tr>
-                    <td style="width: 40%">Nivel: <strong>{{ $prematricula->nivel->nombre ?? '---' }}</strong></td>
-                    <td style="width: 60%">Carrera técnica: <strong>{{ $prematricula->carrera->nombre ?? '---' }}</strong></td>
-                </tr>
-                @php
-                    $opcionesExtraCarrera = collect([
-                        $prematricula->carreraSegundaOpcion ? '2ª: ' . $prematricula->carreraSegundaOpcion->nombre : null,
-                        $prematricula->carreraTerceraOpcion ? '3ª: ' . $prematricula->carreraTerceraOpcion->nombre : null,
-                        $prematricula->carreraCuartaOpcion  ? '4ª: ' . $prematricula->carreraCuartaOpcion->nombre : null,
-                    ])->filter();
-                @endphp
-                @if ($opcionesExtraCarrera->count())
-                    <tr>
-                        <td colspan="2" style="font-size:8px;">Otras opciones: {{ $opcionesExtraCarrera->implode('  |  ') }}</td>
-                    </tr>
-                @endif
-            </table> --}}
-
         @elseif ($esNocturnaPdf)
             <table class="nivel-info">
                 <tr>
@@ -153,32 +140,6 @@
                     <td style="width: 60%">Carrera técnica: <strong>{{ $prematricula->carrera->nombre ?? '---' }}</strong></td>
                 </tr>
             </table>
-
-       {{-- @else
-            <table class="nivel-info">
-                <tr>
-                    <td>Nivel: <strong>{{ $prematricula->nivel->nombre ?? '---' }}</strong></td>
-                    <td style="text-align:center">Sección: <strong>{{ $prematricula->seccion->nombre ?? 'Sin preferencia' }}</strong></td>
-                </tr>
-                <tr>
-                    <td>Sub A Especialidad/Taller: <strong>{{ $tallerA?->nombre ?? '---' }}</strong></td>
-                    <td style="text-align:center">Sub B Especialidad/Taller: <strong>{{ $tallerB?->nombre ?? '---' }}</strong></td>
-                    <td style="text-align:right">Grupo elegido: <strong>{{ $prematricula->grupo_taller ? 'Grupo '.$prematricula->grupo_taller : '---' }}</strong></td>
-                </tr>
-                @php
-                    $opcionesExtra = collect([
-                        $prematricula->tallerSegundaOpcion ? '2ª: ' . $prematricula->tallerSegundaOpcion->seccion->nombre . '-' . $prematricula->tallerSegundaOpcion->nombre . ' (Grupo ' . $prematricula->tallerSegundaOpcion->grupo . ')' : null,
-                        $prematricula->tallerTerceraOpcion ? '3ª: ' . $prematricula->tallerTerceraOpcion->seccion->nombre . '-' . $prematricula->tallerTerceraOpcion->nombre . ' (Grupo ' . $prematricula->tallerTerceraOpcion->grupo . ')' : null,
-                        $prematricula->tallerCuartaOpcion  ? '4ª: ' . $prematricula->tallerCuartaOpcion->seccion->nombre . '-' . $prematricula->tallerCuartaOpcion->nombre . ' (Grupo ' . $prematricula->tallerCuartaOpcion->grupo . ')' : null,
-                    ])->filter();
-                @endphp
-                @if ($opcionesExtra->count())
-                    <tr>
-                        <td colspan="3" style="font-size:8px;">Otras opciones: {{ $opcionesExtra->implode('  |  ') }}</td>
-                    </tr>
-                @endif
-            </table>
-        @endif --}}
 
         @else
             <table class="nivel-info">
@@ -256,8 +217,55 @@
             @endif
         </table>
 
-        {{-- 2. Datos del/los Encargado(s) Legal(es) --}}
-        <div class="seccion-titulo">2. Datos del Encargado Legal</div>
+        @if (!$ocultarEncargadosPdf)
+        {{-- 2. Datos del Padre y la Madre --}}
+        <div class="seccion-titulo">2. Datos del Padre y la Madre</div>
+        @php
+            $familiarPadre = $prematricula->estudiante->familiares->firstWhere('tipo', 'padre');
+            $familiarMadre = $prematricula->estudiante->familiares->firstWhere('tipo', 'madre');
+        @endphp
+        <table class="datos" style="font-size: 8px;">
+            <tr>
+                <th width="10%">Tipo</th>
+                <th width="20%">Nombre completo</th>
+                <th width="12%">Cédula</th>
+                <th width="12%">Tel. principal</th>
+                <th width="12%">Tel. secundario</th>
+                <th width="17%">Correo</th>
+                <th width="17%">Ocupación</th>
+            </tr>
+            <tr>
+                <td class="val">Padre</td>
+                <td class="val">{{ $familiarPadre->nombre_completo ?? '---' }}</td>
+                <td class="val">{{ $familiarPadre->cedula ?? '---' }}</td>
+                <td class="val">{{ $familiarPadre->telefono_principal ?? '---' }}</td>
+                <td class="val">{{ $familiarPadre->telefono_secundario ?? '---' }}</td>
+                <td class="val" style="font-size:7px;">{{ $familiarPadre->email ?? '---' }}</td>
+                <td class="val">{{ $familiarPadre->ocupacion ?? '---' }}</td>
+            </tr>
+            <tr>
+                <td class="val">Madre</td>
+                <td class="val">{{ $familiarMadre->nombre_completo ?? '---' }}</td>
+                <td class="val">{{ $familiarMadre->cedula ?? '---' }}</td>
+                <td class="val">{{ $familiarMadre->telefono_principal ?? '---' }}</td>
+                <td class="val">{{ $familiarMadre->telefono_secundario ?? '---' }}</td>
+                <td class="val" style="font-size:7px;">{{ $familiarMadre->email ?? '---' }}</td>
+                <td class="val">{{ $familiarMadre->ocupacion ?? '---' }}</td>
+            </tr>
+        </table>
+        <table class="datos">
+            <tr>
+                <th width="50%">Dirección del Padre</th>
+                <th width="50%">Dirección de la Madre</th>
+            </tr>
+            <tr>
+                <td class="val">{{ $familiarPadre->direccion ?? '---' }}</td>
+                <td class="val">{{ $familiarMadre->direccion ?? '---' }}</td>
+            </tr>
+        </table>
+
+        {{-- 3. Datos del/los Encargado(s) Legal(es) --}}
+        <div class="seccion-titulo">3. Datos del Encargado Legal</div>
         @php
             $listaEncargados = $prematricula->tutores->count() > 0
                 ? $prematricula->tutores->sortByDesc(fn($e) => $e->pivot->principal)->values()
@@ -296,9 +304,29 @@
                 <td class="val">{{ $prematricula->tutor->direccion ?? $prematricula->estudiante->direccion }}</td>
             </tr>
         </table>
+        @endif
 
-        {{-- 3. Documentos --}}
-        <div class="seccion-titulo">3. Documentos Presentados</div>
+        {{-- Datos de contacto del estudiante (solo Nocturna + mayor de edad) --}}
+        @if ($ocultarEncargadosPdf)
+        <div class="seccion-titulo">2. Datos de contacto del estudiante (mayor de edad)</div>
+        <table class="datos">
+            <tr>
+                <th width="25%">Cédula</th>
+                <th width="25%">Teléfono</th>
+                <th width="25%">Correo personal</th>
+                <th width="25%">Correo institucional (MEP)</th>
+            </tr>
+            <tr>
+                <td class="val">{{ $prematricula->estudiante->cedula }}</td>
+                <td class="val">{{ $prematricula->estudiante->telefono ?? '---' }}</td>
+                <td class="val" style="font-size:7px;">{{ $prematricula->estudiante->email_personal ?? '---' }}</td>
+                <td class="val" style="font-size:7px;">{{ $prematricula->estudiante->email_mep ?? '---' }}</td>
+            </tr>
+        </table>
+        @endif
+
+        {{-- Documentos --}}
+        <div class="seccion-titulo">{{ $ocultarEncargadosPdf ? '3' : '4' }}. Documentos Presentados</div>
         <table class="datos">
             <tr>
                 <th width="60%">Documento</th>
@@ -308,10 +336,14 @@
             @php
                 $tiposDocumentos = [
                     'cedula_estudiante' => 'Cédula de identidad del estudiante',
-                    'cedula_encargado'  => 'Cédula del encargado legal',
-                    'notas'             => 'Certificado de notas del año anterior',
-                    'foto'              => 'Fotografía reciente del estudiante',
                 ];
+
+                if (!$ocultarEncargadosPdf) {
+                    $tiposDocumentos['cedula_encargado'] = 'Cédula del encargado legal';
+                }
+
+                $tiposDocumentos['notas'] = 'Certificado de notas del año anterior';
+                $tiposDocumentos['foto']  = 'Fotografía reciente del estudiante';
 
                 $esSetimoPdf = $prematricula->nivel && (
                     str_contains((string) $prematricula->nivel->numero, '7') ||
@@ -353,7 +385,7 @@
         <table class="firma-table">
             <tr>
                 <td width="40%">
-                    Nombre del encargado que matricula
+                    {{ $ocultarEncargadosPdf ? 'Nombre del estudiante (mayor de edad)' : 'Nombre del encargado que matricula' }}
                     <div style="font-weight: bold; font-size: 9px; padding-top: 14px;">
                         {{ $prematricula->tutor->nombre_completo }}
                     </div>
@@ -362,7 +394,7 @@
                     </div>
                 </td>
                 <td width="35%">
-                    Firma del encargado legal
+                    {{ $ocultarEncargadosPdf ? 'Firma del estudiante' : 'Firma del encargado legal' }}
                     <div class="firma-linea"></div>
                 </td>
                 <td class="sello-td" rowspan="{{ $esPlanNacionalPdf ? 4 : 3 }}">

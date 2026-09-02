@@ -173,7 +173,24 @@ class PrematriculaController extends Controller
             ->with('error', 'El período de prematrícula no está activo.');
     }
 
-    $validado = $request->validate([
+    // Determinar modalidad y edad ANTES de validar, para saber si los encargados son obligatorios
+    $modalidadSeleccionada = \App\Models\Modalidad::find($request->modalidad_id);
+    $esNocturnaReq  = $modalidadSeleccionada && $modalidadSeleccionada->nombre === 'Nocturna';
+
+    $edadEstudiante = null;
+    if ($request->filled('est_nacimiento')) {
+        try {
+            $edadEstudiante = \Carbon\Carbon::parse($request->est_nacimiento)->age;
+        } catch (\Exception $e) {
+            $edadEstudiante = null;
+        }
+    }
+
+    // Nocturna + mayor de edad (>=18): el estudiante es su propio contacto, no se piden encargados
+    $esNocturnaMayor = $esNocturnaReq && $edadEstudiante !== null && $edadEstudiante >= 18;
+
+    // Reglas base del estudiante
+    $reglas = [
         'est_nombre'       => 'required|string|max:100',
         'est_apellido'     => 'required|string|max:100',
         'est_cedula'       => 'required|string|unique:estudiantes,cedula',
@@ -191,36 +208,39 @@ class PrematriculaController extends Controller
         'est_distrito'  => 'required|string',
         'est_poblado'   => 'required|string',
 
-        'tut_nombre'    => 'required|string|max:150',
-        'tut_relacion'  => 'required|string',
-        'tut_cedula'    => 'required|string',
-        'tut_telefono'  => 'required|string',
-        'tut_telefono2' => 'nullable|string',
-        'tut_email'     => 'required|email',
-        'tut_ocupacion' => 'nullable|string',
+        'nivel_id'              => 'required|exists:niveles,id',
+        'seccion_id'            => 'nullable|exists:secciones,id',
+        'grupo_taller'          => 'nullable|string|in:A,B',
+        'carrera_id'            => 'nullable|exists:carreras,id',
+        'colegio_procedencia'   => 'required|string',
+        'anio_cursado_anterior' => 'required|string',
 
-        'tut_provincia' => 'required|string',
-        'tut_canton'    => 'required|string',
-        'tut_distrito'  => 'required|string',
-        'tut_poblado'   => 'required|string',
+        'tecnica_1'             => 'nullable|string|max:150',
+        'tecnica_2'             => 'nullable|string|max:150',
+        'formacion_vocacional'  => 'nullable|string|max:150',
+        'tecnica_alto'          => 'nullable|string|max:150',
+        'seguimiento_pn'        => 'nullable|string',
 
-        'principal'     => 'required|in:1,2,3',
+        'doc_cedula' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120|required_without:fisico_cedula',
+        'doc_notas'  => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120|required_without:fisico_notas',
+        'doc_foto'   => 'nullable|file|mimes:jpg,jpeg,png|max:2048',
+        'doc_cedula_encargado' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        'doc_prueba_admision'  => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        'doc_pase'              => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
 
-        'tut2_nombre'    => 'nullable|string|max:150',
-        'tut2_relacion'  => 'nullable|string',
-        'tut2_cedula'    => 'nullable|string',
-        'tut2_telefono'  => 'nullable|string',
-        'tut2_telefono2' => 'nullable|string',
-        'tut2_email'     => 'nullable|email',
-        'tut2_ocupacion' => 'nullable|string',
+        'fisico_cedula'           => 'nullable|boolean',
+        'fisico_notas'            => 'nullable|boolean',
+        'fisico_cedula_encargado' => 'nullable|boolean',
+        'fisico_prueba_admision'  => 'nullable|boolean',
+        'fisico_pase'             => 'nullable|boolean',
 
-        'tut3_nombre'    => 'nullable|string|max:150',
-        'tut3_relacion'  => 'nullable|string',
-        'tut3_cedula'    => 'nullable|string',
-        'tut3_telefono'  => 'nullable|string',
-        'tut3_telefono2' => 'nullable|string',
-        'tut3_email'     => 'nullable|email',
-        'tut3_ocupacion' => 'nullable|string',
+        'modalidad_id' => 'required|exists:modalidades,id',
+        'taller_segunda_opcion_id'  => 'nullable|exists:seccion_talleres,id',
+        'carrera_segunda_opcion_id' => 'nullable|exists:carreras,id',
+        'taller_tercera_opcion_id'  => 'nullable|exists:seccion_talleres,id',
+        'taller_cuarta_opcion_id'   => 'nullable|exists:seccion_talleres,id',
+        'carrera_tercera_opcion_id' => 'nullable|exists:carreras,id',
+        'carrera_cuarta_opcion_id'  => 'nullable|exists:carreras,id',
 
         // Padre / Madre (siempre opcionales)
         'padre_nombre'    => 'nullable|string|max:150',
@@ -238,41 +258,67 @@ class PrematriculaController extends Controller
         'madre_email'     => 'nullable|email',
         'madre_ocupacion' => 'nullable|string|max:150',
         'madre_direccion' => 'nullable|string',
+    ];
 
-        'nivel_id'              => 'required|exists:niveles,id',
-        'seccion_id'            => 'nullable|exists:secciones,id',
-        'grupo_taller'          => 'nullable|string|in:A,B',
-        'carrera_id'            => 'nullable|exists:carreras,id',
-        'colegio_procedencia'   => 'required|string',
-        'anio_cursado_anterior' => 'required|string',
+    if ($esNocturnaMayor) {
+        // Estudiante mayor de edad en Nocturna: es su propio contacto.
+        // Se pide correo personal (obligatorio) y teléfono (obligatorio). Encargados NO obligatorios.
+        $reglas['est_email_personal'] = 'required|email';
+        $reglas['est_telefono']       = 'required|string|max:50';
 
-        'tecnica_1'             => 'nullable|string|max:150',
-        'tecnica_2'             => 'nullable|string|max:150',
-        'formacion_vocacional'  => 'nullable|string|max:150',
-        'tecnica_alto'          => 'nullable|string|max:150',
-        'seguimiento_pn'        => 'nullable|string',
+        $reglas['tut_nombre']    = 'nullable|string|max:150';
+        $reglas['tut_relacion']  = 'nullable|string';
+        $reglas['tut_cedula']    = 'nullable|string';
+        $reglas['tut_telefono']  = 'nullable|string';
+        $reglas['tut_telefono2'] = 'nullable|string';
+        $reglas['tut_email']     = 'nullable|email';
+        $reglas['tut_ocupacion'] = 'nullable|string';
+        $reglas['tut_provincia'] = 'nullable|string';
+        $reglas['tut_canton']    = 'nullable|string';
+        $reglas['tut_distrito']  = 'nullable|string';
+        $reglas['tut_poblado']   = 'nullable|string';
+        $reglas['principal']     = 'nullable|in:1,2,3';
+    } else {
+        // Caso normal: encargado 1 obligatorio
+        $reglas['est_email_personal'] = 'nullable|email';
+        $reglas['est_telefono']       = 'nullable|string|max:50';
 
-        'doc_cedula' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120|required_without:fisico_cedula',
-        'doc_notas'  => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120|required_without:fisico_notas',
-        'doc_foto'   => 'nullable|file|mimes:jpg,jpeg,png|max:2048',
-        'doc_cedula_encargado' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120|required_without:fisico_cedula_encargado',
-        'doc_prueba_admision'  => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-        'doc_pase'              => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        $reglas['tut_nombre']    = 'required|string|max:150';
+        $reglas['tut_relacion']  = 'required|string';
+        $reglas['tut_cedula']    = 'required|string';
+        $reglas['tut_telefono']  = 'required|string';
+        $reglas['tut_telefono2'] = 'nullable|string';
+        $reglas['tut_email']     = 'required|email';
+        $reglas['tut_ocupacion'] = 'nullable|string';
+        $reglas['tut_provincia'] = 'required|string';
+        $reglas['tut_canton']    = 'required|string';
+        $reglas['tut_distrito']  = 'required|string';
+        $reglas['tut_poblado']   = 'required|string';
+        $reglas['principal']     = 'required|in:1,2,3';
 
-        'fisico_cedula'           => 'nullable|boolean',
-        'fisico_notas'            => 'nullable|boolean',
-        'fisico_cedula_encargado' => 'nullable|boolean',
-        'fisico_prueba_admision'  => 'nullable|boolean',
-        'fisico_pase'             => 'nullable|boolean',
+        $reglas['doc_cedula_encargado'] = 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120|required_without:fisico_cedula_encargado';
+    }
 
-        'modalidad_id' => 'required|exists:modalidades,id',
-        'taller_segunda_opcion_id'  => 'nullable|exists:seccion_talleres,id',
-        'carrera_segunda_opcion_id' => 'nullable|exists:carreras,id',
-        'taller_tercera_opcion_id'  => 'nullable|exists:seccion_talleres,id',
-        'taller_cuarta_opcion_id'   => 'nullable|exists:seccion_talleres,id',
-        'carrera_tercera_opcion_id' => 'nullable|exists:carreras,id',
-        'carrera_cuarta_opcion_id'  => 'nullable|exists:carreras,id',
+    // Encargados 2 y 3 siempre opcionales
+    $reglas = array_merge($reglas, [
+        'tut2_nombre'    => 'nullable|string|max:150',
+        'tut2_relacion'  => 'nullable|string',
+        'tut2_cedula'    => 'nullable|string',
+        'tut2_telefono'  => 'nullable|string',
+        'tut2_telefono2' => 'nullable|string',
+        'tut2_email'     => 'nullable|email',
+        'tut2_ocupacion' => 'nullable|string',
+
+        'tut3_nombre'    => 'nullable|string|max:150',
+        'tut3_relacion'  => 'nullable|string',
+        'tut3_cedula'    => 'nullable|string',
+        'tut3_telefono'  => 'nullable|string',
+        'tut3_telefono2' => 'nullable|string',
+        'tut3_email'     => 'nullable|email',
+        'tut3_ocupacion' => 'nullable|string',
     ]);
+
+    $validado = $request->validate($reglas);
 
     // Verificar cupo disponible — solo para Diurna (secciones y talleres)
     if (!empty($validado['seccion_id']) && !empty($validado['grupo_taller'])) {
@@ -296,22 +342,24 @@ class PrematriculaController extends Controller
     }
 
     $emailMep = $validado['est_email_mep'] ?? null;
-if (empty($emailMep)) {
-    $emailMep = $validado['est_cedula'] . '@est.mep.go.cr';
-}
+    if (empty($emailMep)) {
+        $emailMep = $validado['est_cedula'] . '@est.mep.go.cr';
+    }
 
-$estudiante = Estudiante::create([
-    'nombre'                => $validado['est_nombre'],
-    'apellido'              => $validado['est_apellido'],
-    'cedula'                => $validado['est_cedula'],
-    'fecha_nacimiento'      => $validado['est_nacimiento'],
-    'genero'                => $validado['est_genero'] ?? null,
-    'nacionalidad'          => $validado['est_nacionalidad'] ?? null,
-    'adecuacion'            => $validado['est_adecuacion'] ?? null,
-    'tipo_discapacidad'     => $validado['est_tipo_discapacidad'] ?? null,
-    'boleta_ubicacion'      => $validado['est_boleta_ubicacion'] ?? null,
-    'nivel_funcionamiento'  => $validado['est_nivel_funcionamiento'] ?? null,
-    'email_mep'             => $emailMep,
+    $estudiante = Estudiante::create([
+        'nombre'                => $validado['est_nombre'],
+        'apellido'              => $validado['est_apellido'],
+        'cedula'                => $validado['est_cedula'],
+        'fecha_nacimiento'      => $validado['est_nacimiento'],
+        'genero'                => $validado['est_genero'] ?? null,
+        'nacionalidad'          => $validado['est_nacionalidad'] ?? null,
+        'adecuacion'            => $validado['est_adecuacion'] ?? null,
+        'tipo_discapacidad'     => $validado['est_tipo_discapacidad'] ?? null,
+        'boleta_ubicacion'      => $validado['est_boleta_ubicacion'] ?? null,
+        'nivel_funcionamiento'  => $validado['est_nivel_funcionamiento'] ?? null,
+        'email_mep'             => $emailMep,
+        'email_personal'        => $validado['est_email_personal'] ?? null,
+        'telefono'              => $validado['est_telefono'] ?? null,
         'direccion' => implode(', ', array_filter([
             $validado['est_provincia'],
             $validado['est_canton'],
@@ -320,44 +368,68 @@ $estudiante = Estudiante::create([
         ])),
     ]);
 
-    // Padre y Madre — se crean solo si se llenó al menos el nombre (son opcionales)
-    if (!empty($validado['padre_nombre'])) {
-        Familiar::create([
-            'estudiante_id'       => $estudiante->id,
-            'tipo'                => 'padre',
-            'nombre_completo'     => $validado['padre_nombre'],
-            'cedula'              => $validado['padre_cedula'] ?? null,
-            'telefono_principal'  => $validado['padre_telefono'] ?? null,
-            'telefono_secundario' => $validado['padre_telefono2'] ?? null,
-            'email'               => $validado['padre_email'] ?? null,
-            'ocupacion'           => $validado['padre_ocupacion'] ?? null,
-            'direccion'           => $validado['padre_direccion'] ?? null,
-        ]);
+    // Padre y Madre — solo si NO es Nocturna mayor de edad, y si se llenó al menos el nombre
+    if (!$esNocturnaMayor) {
+        if (!empty($validado['padre_nombre'])) {
+            Familiar::create([
+                'estudiante_id'       => $estudiante->id,
+                'tipo'                => 'padre',
+                'nombre_completo'     => $validado['padre_nombre'],
+                'cedula'              => $validado['padre_cedula'] ?? null,
+                'telefono_principal'  => $validado['padre_telefono'] ?? null,
+                'telefono_secundario' => $validado['padre_telefono2'] ?? null,
+                'email'               => $validado['padre_email'] ?? null,
+                'ocupacion'           => $validado['padre_ocupacion'] ?? null,
+                'direccion'           => $validado['padre_direccion'] ?? null,
+            ]);
+        }
+
+        if (!empty($validado['madre_nombre'])) {
+            Familiar::create([
+                'estudiante_id'       => $estudiante->id,
+                'tipo'                => 'madre',
+                'nombre_completo'     => $validado['madre_nombre'],
+                'cedula'              => $validado['madre_cedula'] ?? null,
+                'telefono_principal'  => $validado['madre_telefono'] ?? null,
+                'telefono_secundario' => $validado['madre_telefono2'] ?? null,
+                'email'               => $validado['madre_email'] ?? null,
+                'ocupacion'           => $validado['madre_ocupacion'] ?? null,
+                'direccion'           => $validado['madre_direccion'] ?? null,
+            ]);
+        }
     }
 
-    if (!empty($validado['madre_nombre'])) {
-        Familiar::create([
-            'estudiante_id'       => $estudiante->id,
-            'tipo'                => 'madre',
-            'nombre_completo'     => $validado['madre_nombre'],
-            'cedula'              => $validado['madre_cedula'] ?? null,
-            'telefono_principal'  => $validado['madre_telefono'] ?? null,
-            'telefono_secundario' => $validado['madre_telefono2'] ?? null,
-            'email'               => $validado['madre_email'] ?? null,
-            'ocupacion'           => $validado['madre_ocupacion'] ?? null,
-            'direccion'           => $validado['madre_direccion'] ?? null,
-        ]);
-    }
-
-    $direccionTutor = implode(', ', array_filter([
-        $validado['tut_provincia'],
-        $validado['tut_canton'],
-        $validado['tut_distrito'],
-        $validado['tut_poblado'],
+    $direccionEstudiante = implode(', ', array_filter([
+        $validado['est_provincia'],
+        $validado['est_canton'],
+        $validado['est_distrito'],
+        $validado['est_poblado'],
     ]));
 
-    $encargados = [
-        1 => [
+    $encargados = [];
+
+    if ($esNocturnaMayor) {
+        // El estudiante mayor de edad es su propio contacto/encargado
+        $encargados[1] = [
+            'nombre_completo'     => $validado['est_nombre'] . ' ' . $validado['est_apellido'],
+            'relacion'            => 'Estudiante mayor de edad',
+            'cedula'              => $validado['est_cedula'],
+            'telefono_principal'  => $validado['est_telefono'],
+            'telefono_secundario' => null,
+            'email'               => $validado['est_email_personal'],
+            'ocupacion'           => null,
+            'direccion'           => $direccionEstudiante,
+        ];
+        $principalNum = 1;
+    } else {
+        $direccionTutor = implode(', ', array_filter([
+            $validado['tut_provincia'],
+            $validado['tut_canton'],
+            $validado['tut_distrito'],
+            $validado['tut_poblado'],
+        ]));
+
+        $encargados[1] = [
             'nombre_completo'     => $validado['tut_nombre'],
             'relacion'            => $validado['tut_relacion'],
             'cedula'              => $validado['tut_cedula'],
@@ -366,71 +438,70 @@ $estudiante = Estudiante::create([
             'email'               => $validado['tut_email'],
             'ocupacion'           => $validado['tut_ocupacion'] ?? null,
             'direccion'           => $direccionTutor,
-        ],
-    ];
+        ];
 
-    if (!empty($validado['tut2_nombre'])) {
-    $encargados[2] = [
-        'nombre_completo'     => $validado['tut2_nombre'],
-        'relacion'            => $validado['tut2_relacion'] ?? null,
-        'cedula'              => $validado['tut2_cedula'] ?? null,
-        'telefono_principal'  => $validado['tut2_telefono'] ?? null,
-        'telefono_secundario' => $validado['tut2_telefono2'] ?? null,
-        'email'               => $validado['tut2_email'] ?? null,
-        'ocupacion'           => $validado['tut2_ocupacion'] ?? null,
-        'direccion'           => $direccionTutor,
-    ];
-}
+        if (!empty($validado['tut2_nombre'])) {
+            $encargados[2] = [
+                'nombre_completo'     => $validado['tut2_nombre'],
+                'relacion'            => $validado['tut2_relacion'] ?? null,
+                'cedula'              => $validado['tut2_cedula'] ?? null,
+                'telefono_principal'  => $validado['tut2_telefono'] ?? null,
+                'telefono_secundario' => $validado['tut2_telefono2'] ?? null,
+                'email'               => $validado['tut2_email'] ?? null,
+                'ocupacion'           => $validado['tut2_ocupacion'] ?? null,
+                'direccion'           => $direccionTutor,
+            ];
+        }
 
-if (!empty($validado['tut3_nombre'])) {
-    $encargados[3] = [
-        'nombre_completo'     => $validado['tut3_nombre'],
-        'relacion'            => $validado['tut3_relacion'] ?? null,
-        'cedula'              => $validado['tut3_cedula'] ?? null,
-        'telefono_principal'  => $validado['tut3_telefono'] ?? null,
-        'telefono_secundario' => $validado['tut3_telefono2'] ?? null,
-        'email'               => $validado['tut3_email'] ?? null,
-        'ocupacion'           => $validado['tut3_ocupacion'] ?? null,
-        'direccion'           => $direccionTutor,
-    ];
-}
-$modalidadSeleccionada = \App\Models\Modalidad::find($validado['modalidad_id']);
-$esPlanNacional = $modalidadSeleccionada && $modalidadSeleccionada->nombre === 'Plan Nacional';
+        if (!empty($validado['tut3_nombre'])) {
+            $encargados[3] = [
+                'nombre_completo'     => $validado['tut3_nombre'],
+                'relacion'            => $validado['tut3_relacion'] ?? null,
+                'cedula'              => $validado['tut3_cedula'] ?? null,
+                'telefono_principal'  => $validado['tut3_telefono'] ?? null,
+                'telefono_secundario' => $validado['tut3_telefono2'] ?? null,
+                'email'               => $validado['tut3_email'] ?? null,
+                'ocupacion'           => $validado['tut3_ocupacion'] ?? null,
+                'direccion'           => $direccionTutor,
+            ];
+        }
 
-if ($esPlanNacional) {
-    $request->validate([
-        'est_tipo_discapacidad'    => 'required|string|max:150',
-        'est_boleta_ubicacion'     => 'required|in:Sí,No',
-        'est_nivel_funcionamiento' => 'required|string',
-    ]);
-} else {
-    $request->validate([
-        'est_adecuacion' => 'required|string',
-    ]);
-}
-
-$nivelSeleccionado = \App\Models\Nivel::find($validado['nivel_id']);
-$esBajoCiclo = $nivelSeleccionado && in_array((string) $nivelSeleccionado->numero, ['7', '8', '9']);
-
-if ($esPlanNacional) {
-    $validado = array_merge($validado, $request->validate([
-        'seccion_id' => 'required|exists:secciones,id',
-    ]));
-
-    if ($esBajoCiclo) {
-        $validado = array_merge($validado, $request->validate([
-            'tecnica_1' => 'required|string|max:150',
-        ]));
-    } else {
-        $validado = array_merge($validado, $request->validate([
-            'formacion_vocacional' => 'required|string|max:150',
-        ]));
+        $principalNum = (int) $validado['principal'];
     }
-}
 
-    
+    $esPlanNacional = $modalidadSeleccionada && $modalidadSeleccionada->nombre === 'Plan Nacional';
 
-    $principalNum = (int) $validado['principal'];
+    if ($esPlanNacional) {
+        $request->validate([
+            'est_tipo_discapacidad'    => 'required|string|max:150',
+            'est_boleta_ubicacion'     => 'required|in:Sí,No',
+            'est_nivel_funcionamiento' => 'required|string',
+        ]);
+    } elseif (!$esNocturnaReq) {
+        $request->validate([
+            'est_adecuacion' => 'required|string',
+        ]);
+    }
+
+    $nivelSeleccionado = \App\Models\Nivel::find($validado['nivel_id']);
+    $esBajoCiclo = $nivelSeleccionado && in_array((string) $nivelSeleccionado->numero, ['7', '8', '9']);
+
+    if ($esPlanNacional) {
+        $validado = array_merge($validado, $request->validate([
+            'seccion_id' => 'required|exists:secciones,id',
+        ]));
+
+        if ($esBajoCiclo) {
+            $validado = array_merge($validado, $request->validate([
+                'tecnica_1' => 'required|string|max:150',
+            ]));
+        } else {
+            $validado = array_merge($validado, $request->validate([
+                'formacion_vocacional' => 'required|string|max:150',
+            ]));
+        }
+    }
+
     $tutoresCreados = [];
 
     foreach ($encargados as $numero => $datosEncargado) {
@@ -476,22 +547,22 @@ if ($esPlanNacional) {
     }
 
     if ($esPlanNacional) {
-    $request->validate([
-        'doc_pase' => 'required_without:fisico_pase|file|mimes:pdf,jpg,jpeg,png|max:5120',
-    ]);
-}
+        $request->validate([
+            'doc_pase' => 'required_without:fisico_pase|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        ]);
+    }
 
     $mapaDocumentos = [
-    'doc_cedula'           => ['tipo' => 'cedula_estudiante', 'fisico' => 'fisico_cedula'],
-    'doc_notas'            => ['tipo' => 'notas', 'fisico' => 'fisico_notas'],
-    'doc_foto'             => ['tipo' => 'foto', 'fisico' => 'fisico_foto'],
-    'doc_cedula_encargado' => ['tipo' => 'cedula_encargado', 'fisico' => 'fisico_cedula_encargado'],
-    'doc_prueba_admision'  => ['tipo' => 'prueba_admision', 'fisico' => 'fisico_prueba_admision'],
-];
+        'doc_cedula'           => ['tipo' => 'cedula_estudiante', 'fisico' => 'fisico_cedula'],
+        'doc_notas'            => ['tipo' => 'notas', 'fisico' => 'fisico_notas'],
+        'doc_foto'             => ['tipo' => 'foto', 'fisico' => 'fisico_foto'],
+        'doc_cedula_encargado' => ['tipo' => 'cedula_encargado', 'fisico' => 'fisico_cedula_encargado'],
+        'doc_prueba_admision'  => ['tipo' => 'prueba_admision', 'fisico' => 'fisico_prueba_admision'],
+    ];
 
-if ($esPlanNacional) {
-    $mapaDocumentos['doc_pase'] = ['tipo' => 'pase', 'fisico' => 'fisico_pase'];
-}
+    if ($esPlanNacional) {
+        $mapaDocumentos['doc_pase'] = ['tipo' => 'pase', 'fisico' => 'fisico_pase'];
+    }
 
     foreach ($mapaDocumentos as $campoFormulario => $info) {
         $esFisico = $info['fisico'] && $request->boolean($info['fisico']);
@@ -531,6 +602,9 @@ if ($esPlanNacional) {
 
         if (!empty($estudiante->email_mep)) {
             $destinatarios->push($estudiante->email_mep);
+        }
+        if (!empty($estudiante->email_personal)) {
+            $destinatarios->push($estudiante->email_personal);
         }
 
         $destinatarios = $destinatarios->filter()->unique()->values();
@@ -579,6 +653,9 @@ public function reenviarCorreo(Prematricula $prematricula)
 
         if (!empty($prematricula->estudiante->email_mep)) {
             $destinatarios->push($prematricula->estudiante->email_mep);
+        }
+        if (!empty($prematricula->estudiante->email_personal)) {
+            $destinatarios->push($prematricula->estudiante->email_personal);
         }
 
         $destinatarios = $destinatarios->filter()->unique()->values();

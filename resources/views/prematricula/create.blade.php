@@ -85,6 +85,26 @@
                                 class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                         </div>
 
+                        {{-- Contacto propio del estudiante (solo Nocturna + mayor de edad) --}}
+                        <div id="contacto_estudiante_mayor" class="md:col-span-2 hidden">
+                            <div class="border border-amber-200 bg-amber-50 rounded-lg p-4">
+                                <p class="text-sm font-semibold text-amber-800 mb-3">Datos de contacto del estudiante (mayor de edad)</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Correo personal del estudiante *</label>
+                                        <input type="email" name="est_email_personal" value="{{ old('est_email_personal') }}"
+                                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        <p class="text-xs text-gray-400 mt-1">A este correo se enviará la matrícula (además del correo MEP).</p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono del estudiante *</label>
+                                        <input type="tel" name="est_telefono" value="{{ old('est_telefono') }}"
+                                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         {{-- Dirección del ESTUDIANTE --}}
                         <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-gray-700 mb-2">Dirección de residencia *</label>
@@ -169,7 +189,7 @@
                 </div>
 
                 {{-- Datos del padre y la madre (opcional) --}}
-                <div class="bg-white shadow-sm rounded-lg p-6 border border-gray-200">
+                <div id="seccion_padre_madre" class="bg-white shadow-sm rounded-lg p-6 border border-gray-200">
                     <h3 class="text-base font-semibold text-gray-900 mb-1">Datos del padre y la madre</h3>
                     <p class="text-xs text-gray-400 mb-4">
                         Estos datos son opcionales. Si el padre o la madre es también uno de los encargados legales,
@@ -215,8 +235,12 @@
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
-                                    <textarea name="padre_direccion" rows="2"
+                                    <textarea name="padre_direccion" id="padre_direccion" rows="2"
                                         class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">{{ old('padre_direccion') }}</textarea>
+                                    <label class="flex items-center gap-2 text-xs text-gray-500 mt-2">
+                                        <input type="checkbox" onchange="copiarDireccionEstFamiliar('padre', this.checked)">
+                                        Usar la misma dirección del estudiante
+                                    </label>
                                 </div>
                             </div>
                         </div>
@@ -259,16 +283,26 @@
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
-                                    <textarea name="madre_direccion" rows="2"
+                                    <textarea name="madre_direccion" id="madre_direccion" rows="2"
                                         class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">{{ old('madre_direccion') }}</textarea>
+                                    <label class="flex items-center gap-2 text-xs text-gray-500 mt-2">
+                                        <input type="checkbox" onchange="copiarDireccionEstFamiliar('madre', this.checked)">
+                                        Usar la misma dirección del estudiante
+                                    </label>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
+                {{-- Aviso para Nocturna mayor de edad --}}
+                <div id="aviso_mayor_edad" class="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800 hidden">
+                    El estudiante es mayor de edad, por lo que no se requieren datos de padre, madre ni encargado legal.
+                    Se usarán los datos de contacto del estudiante para enviarle la matrícula.
+                </div>
+
                 {{-- Datos de los encargados --}}
-                <div class="bg-white shadow-sm rounded-lg p-6 border border-gray-200">
+                <div id="seccion_encargados" class="bg-white shadow-sm rounded-lg p-6 border border-gray-200">
                     <h3 class="text-base font-semibold text-gray-900 mb-1">Datos del encargado legal</h3>
                     <p class="text-xs text-gray-400 mb-4">Podés agregar hasta 3 encargados. Marcá cuál es el principal (recibe correos y firma el documento).</p>
 
@@ -743,6 +777,26 @@
         if (relacionSelect) relacionSelect.value = tipo === 'padre' ? 'Padre' : 'Madre';
     }
 
+    // ===== Copiar dirección del estudiante al textarea de Padre/Madre =====
+    function copiarDireccionEstFamiliar(tipo, activar) {
+        const textarea = document.getElementById(tipo + '_direccion');
+        if (!textarea) return;
+
+        if (!activar) {
+            textarea.value = '';
+            textarea.disabled = false;
+            return;
+        }
+
+        const prov = document.getElementById('est_provincia').value;
+        const cant = document.getElementById('est_canton').value;
+        const dist = document.getElementById('est_distrito').value;
+        const pob  = document.querySelector('[name="est_poblado"]').value;
+
+        textarea.value = [prov, cant, dist, pob].filter(Boolean).join(', ');
+        textarea.disabled = false;
+    }
+
     // ===== Niveles / secciones / talleres / carreras =====
     function cargarOpciones(nivelId) {
         if (esNocturna) {
@@ -1055,10 +1109,14 @@
         emailInput.value = cedulaLimpia + '@est.mep.go.cr';
     }
 
+    let edadEstudianteActual = null;
+
     function calcularEdad(fechaNacimiento) {
         const spanEdad = document.getElementById('edad_calculada');
         if (!fechaNacimiento) {
             spanEdad.textContent = '';
+            edadEstudianteActual = null;
+            actualizarVisibilidadEncargados();
             return;
         }
 
@@ -1074,10 +1132,47 @@
 
         if (edad < 0 || edad > 100) {
             spanEdad.textContent = '';
+            edadEstudianteActual = null;
+            actualizarVisibilidadEncargados();
             return;
         }
 
         spanEdad.textContent = edad + ' años';
+        edadEstudianteActual = edad;
+        actualizarVisibilidadEncargados();
+    }
+
+    // Muestra/oculta padre-madre, encargados y contacto del estudiante según modalidad + edad.
+    // Solo en Nocturna con estudiante mayor de edad (>=18) se ocultan encargados y se pide contacto propio.
+    function actualizarVisibilidadEncargados() {
+        const seccionPadreMadre = document.getElementById('seccion_padre_madre');
+        const seccionEncargados = document.getElementById('seccion_encargados');
+        const contactoEstudiante = document.getElementById('contacto_estudiante_mayor');
+        const avisoMayor = document.getElementById('aviso_mayor_edad');
+
+        const esMayor = edadEstudianteActual !== null && edadEstudianteActual >= 18;
+        const ocultar = esNocturna && esMayor;
+
+        // Padre/Madre y Encargados
+        if (seccionPadreMadre) seccionPadreMadre.classList.toggle('hidden', ocultar);
+        if (seccionEncargados) seccionEncargados.classList.toggle('hidden', ocultar);
+        if (avisoMayor)        avisoMayor.classList.toggle('hidden', !ocultar);
+
+        // Contacto propio del estudiante (correo personal + teléfono)
+        if (contactoEstudiante) contactoEstudiante.classList.toggle('hidden', !ocultar);
+
+        // Ajustar campos required del encargado 1 y del contacto del estudiante
+        const camposEnc1 = ['tut_nombre','tut_relacion','tut_cedula','tut_telefono','tut_email',
+                            'tut_provincia','tut_canton','tut_distrito','tut_poblado'];
+        camposEnc1.forEach(function(name) {
+            const el = document.querySelector('[name="' + name + '"]');
+            if (el) el.required = !ocultar;
+        });
+
+        const emailPersonal = document.querySelector('[name="est_email_personal"]');
+        const telEstudiante = document.querySelector('[name="est_telefono"]');
+        if (emailPersonal) emailPersonal.required = ocultar;
+        if (telEstudiante) telEstudiante.required = ocultar;
     }
 
     function mostrarEncargado(numero) {
@@ -1115,6 +1210,8 @@
         const fechaNacimientoInput = document.getElementById('est_nacimiento');
         if (fechaNacimientoInput && fechaNacimientoInput.value) {
             calcularEdad(fechaNacimientoInput.value);
+        } else {
+            actualizarVisibilidadEncargados();
         }
 
         const form = document.querySelector('form');
