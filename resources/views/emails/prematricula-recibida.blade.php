@@ -10,17 +10,16 @@
         .codigo { background-color: #dbeafe; color: #1e40af; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 18px; display: inline-block; margin: 12px 0; }
         .dato { margin-bottom: 8px; }
         .dato span { font-weight: bold; }
-        .aviso { background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; margin-top: 16px; border-radius: 4px; font-size: 13px; }
     </style>
 </head>
 <body>
     <div class="header">
-        <h2 style="margin:0">Prematrícula recibida</h2>
+        <h2 style="margin:0">Matrícula recibida</h2>
         <p style="margin:4px 0 0">{{ config('app.name') }}</p>
     </div>
     <div class="body">
         <p>Estimado/a <strong>{{ $prematricula->tutor->nombre_completo }}</strong>,</p>
-        <p>Hemos recibido correctamente la solicitud de prematrícula con el siguiente detalle:</p>
+        <p>Hemos recibido correctamente la matrícula con el siguiente detalle:</p>
 
         <div class="codigo">{{ $prematricula->codigo }}</div>
 
@@ -28,10 +27,6 @@
         <div class="dato">📚 <span>Nivel:</span> {{ $prematricula->nivel->nombre ?? '—' }}</div>
         <div class="dato">🏫 <span>Sección preferida:</span> {{ $prematricula->seccion->nombre ?? 'Sin preferencia' }}</div>
         <div class="dato">🎨 <span>Grupo de taller:</span> {{ $prematricula->grupo_taller ? 'Grupo ' . $prematricula->grupo_taller : '—' }}</div>
-
-        <div class="aviso">
-            Este correo es una confirmación de recepción. La prematrícula será revisada por el personal del colegio y recibirá una notificación con la decisión final en los próximos días hábiles.
-        </div>
     </div>
     <div class="footer">
         {{ config('app.name') }} — Este es un correo automático, por favor no responda a este mensaje.

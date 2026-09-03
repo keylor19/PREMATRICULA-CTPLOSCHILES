@@ -22,7 +22,7 @@ class PrematriculaRecibida extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Prematrícula recibida — ' . $this->prematricula->codigo,
+            subject: 'Matrícula recibida — ' . $this->prematricula->codigo,
         );
     }
 
