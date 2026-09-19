@@ -1,58 +1,77 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Sistema de Prematrícula y Matrícula — CTP Los Chiles
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sistema web para gestionar la prematrícula y matrícula del Colegio Técnico Profesional de Los Chiles. Permite a los docentes registrar estudiantes por período, y al administrador configurar niveles, secciones, talleres, carreras técnicas y períodos, además de revisar y exportar las solicitudes recibidas.
 
-## About Laravel
+Construido con [Laravel](https://laravel.com) 13, Blade + Tailwind CSS, y MySQL.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Modalidades soportadas
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **Diurna**: estudiantes de sétimo a undécimo, organizados por sección y taller (grupos A/B).
+- **Nocturna**: carreras técnicas nocturnas, con manejo especial para estudiantes mayores de edad (son su propio encargado).
+- **Plan Nacional**: educación especial, con campos propios (adecuación, boleta de ubicación, nivel de funcionamiento, técnicas).
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Roles
 
-## Learning Laravel
+- **Docente**: matricula estudiantes en las modalidades que tenga asignadas, ve y gestiona únicamente sus propias matrículas (descarga de PDF, reenvío de correo), y puede **ratificar** de un período a otro a los estudiantes que ya matriculó antes, reutilizando sus datos y solo actualizando la sección/especialidad del nuevo año.
+- **Administrador**: gestiona docentes, períodos, modalidades, niveles/secciones/talleres/carreras y su capacidad, revisa y edita todas las matrículas, y exporta a Excel por período y modalidad.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+El registro público está deshabilitado a propósito: las cuentas de docente y administrador las crea el administrador desde el panel interno (`/admin/docentes`).
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Requisitos
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+- PHP 8.3+ con las extensiones habituales de Laravel (mbstring, pdo_mysql, fileinfo, gd/imagick para PDF)
+- Composer
+- Node.js 18+ y npm
+- MySQL 8
 
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Instalación
 
 ```bash
-composer require laravel/boost --dev
+composer install
+npm install
 
-php artisan boost:install
+cp .env.example .env
+php artisan key:generate
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Editá `.env` con los datos reales de tu base de datos y del correo SMTP institucional (ver más abajo). Luego:
 
-## Contributing
+```bash
+php artisan migrate
+php artisan db:seed   # crea el usuario admin inicial y las 3 modalidades (Diurna, Nocturna, Plan Nacional)
+npm run build          # o `npm run dev` en desarrollo
+php artisan serve
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+El seeder de admin crea `admin@ctp.local` con una contraseña temporal — cambiala desde el sistema apenas entres por primera vez. Después necesitás crear al menos un período de matrícula activo (`/admin/periodos`) y configurar niveles/secciones/talleres o carreras (`/admin/configuracion`) antes de que los docentes puedan matricular.
 
-## Code of Conduct
+## Variables de entorno relevantes
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+- `DB_*`: conexión MySQL.
+- `MAIL_*`: SMTP para el envío automático del correo de confirmación de cada matrícula (con el PDF de la boleta adjunto). En desarrollo/pruebas usá `MAIL_MAILER=log` para no enviar correos reales.
+- `APP_DEBUG`: **debe quedar en `false` en producción** — con `true` expone trazas de error y detalles internos.
+- `SESSION_SECURE_COOKIE`: poné `true` si el sitio corre bajo HTTPS (recomendado en producción).
 
-## Security Vulnerabilities
+## Pruebas
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+php artisan test
+```
 
-## License
+Cubre autenticación, control de acceso por rol (docente vs. administrador), que un docente no pueda ver ni descargar matrículas de otro (protección contra IDOR), el manejo de cupos bajo concurrencia (bloqueo a nivel de fila para evitar sobrecupo cuando dos docentes matriculan al mismo tiempo en el último cupo disponible), y el flujo de ratificación entre períodos.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Estructura relevante
+
+- `app/Http/Controllers/PrematriculaController.php` — flujo del docente: crear, listar, descargar PDF, reenviar correo y ratificar matrículas.
+- `app/Http/Controllers/Admin/` — panel de administración (dashboard, matrículas, configuración de niveles/secciones/talleres/carreras, períodos, modalidades, docentes).
+- `app/Services/BoletaPdfBuilder.php` — genera la boleta en PDF y le adjunta los documentos digitales entregados.
+- `app/Exports/` — exportación a Excel de las matrículas por período/modalidad.
+
+## Seguridad
+
+Antes de publicar o desplegar en producción, verificá que:
+
+- `.env` nunca se suba al repositorio (ya está en `.gitignore`).
+- `APP_DEBUG=false` y `APP_ENV=production`.
+- La contraseña de la cuenta de correo SMTP y la de la base de datos sean credenciales dedicadas, no reutilizadas.
+- Corrés `composer audit` periódicamente para detectar dependencias con vulnerabilidades conocidas.
