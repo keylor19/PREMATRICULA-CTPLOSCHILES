@@ -31,6 +31,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/prematricula', [PrematriculaController::class, 'index'])->name('prematricula.index');
     Route::get('/prematricula/crear', [PrematriculaController::class, 'create'])->name('prematricula.create');
     Route::post('/prematricula', [PrematriculaController::class, 'store'])->name('prematricula.store');
+    Route::get('/prematricula/ratificar', [PrematriculaController::class, 'ratificarIndex'])->name('prematricula.ratificar.index');
+    Route::get('/prematricula/ratificar/{estudiante}', [PrematriculaController::class, 'ratificarForm'])->name('prematricula.ratificar.form');
+    Route::post('/prematricula/ratificar/{estudiante}', [PrematriculaController::class, 'ratificarStore'])->name('prematricula.ratificar.store');
     Route::get('/prematricula/{prematricula}/pdf', [PrematriculaController::class, 'descargarPdf'])->name('prematricula.pdf');
     Route::post('/prematricula/{prematricula}/reenviar-correo', [PrematriculaController::class, 'reenviarCorreo'])->name('prematricula.reenviarCorreo');
 });

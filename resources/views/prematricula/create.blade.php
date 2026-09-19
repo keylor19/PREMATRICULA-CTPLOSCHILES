@@ -25,7 +25,14 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('prematricula.store') }}" enctype="multipart/form-data" class="space-y-6">
+            @isset($estudianteRatificando)
+                <div class="mb-4 p-3 bg-emerald-50 border border-emerald-100 rounded-lg text-xs text-emerald-800">
+                    ✅ Estás ratificando a <strong>{{ $estudianteRatificando->nombre }} {{ $estudianteRatificando->apellido }}</strong>,
+                    matriculado el período anterior. Revisá y actualizá sus datos, y elegí la sección/especialidad de este año.
+                </div>
+            @endisset
+
+            <form method="POST" action="{{ $accionFormulario ?? route('prematricula.store') }}" enctype="multipart/form-data" class="space-y-6">
                 @csrf
                 <input type="hidden" name="modalidad_id" value="{{ $modalidad->id }}">
 
@@ -1206,6 +1213,17 @@
         seleccionarLosChiles('est');
         seleccionarLosChiles('tut');
         actualizarLabelColegio();
+
+        @isset($nivelSugeridoId)
+            @if ($nivelSugeridoId)
+                const nivelSelect = document.getElementById('nivel_id');
+                if (nivelSelect && !nivelSelect.value) {
+                    nivelSelect.value = '{{ $nivelSugeridoId }}';
+                    cargarOpciones(nivelSelect.value);
+                    actualizarLabelColegio();
+                }
+            @endif
+        @endisset
 
         const fechaNacimientoInput = document.getElementById('est_nacimiento');
         if (fechaNacimientoInput && fechaNacimientoInput.value) {

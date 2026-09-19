@@ -31,8 +31,11 @@
                             Usuarios
                         </x-nav-link>
                     @else
-                        <x-nav-link :href="route('prematricula.index')" :active="request()->routeIs('prematricula.*')">
+                        <x-nav-link :href="route('prematricula.index')" :active="request()->routeIs('prematricula.index') || request()->routeIs('prematricula.create') || request()->routeIs('prematricula.store')">
                             Matrícula
+                        </x-nav-link>
+                        <x-nav-link :href="route('prematricula.ratificar.index')" :active="request()->routeIs('prematricula.ratificar.*')">
+                            Ratificar matrículas
                         </x-nav-link>
                     @endif
                 </div>

@@ -30,7 +30,17 @@ class PrematriculaController extends Controller
         ->latest()
         ->get();
 
-    return view('prematricula.index', compact('prematriculas', 'periodo'));
+    $pendientesRatificar = 0;
+    $periodoAnterior = $periodo ? Periodo::anterior() : null;
+    if ($periodo && $periodo->estaAbierto() && $periodoAnterior) {
+        $yaMatriculadosIds = Prematricula::where('periodo_id', $periodo->id)->pluck('estudiante_id');
+        $pendientesRatificar = Prematricula::where('periodo_id', $periodoAnterior->id)
+            ->where('user_id', Auth::id())
+            ->whereNotIn('estudiante_id', $yaMatriculadosIds)
+            ->count();
+    }
+
+    return view('prematricula.index', compact('prematriculas', 'periodo', 'pendientesRatificar'));
 }
 
     public function create(Request $request)
@@ -83,6 +93,23 @@ class PrematriculaController extends Controller
     $esNocturna     = $modalidad->nombre === 'Nocturna';
     $esPlanNacional = $modalidad->nombre === 'Plan Nacional';
     $esDiurna       = $modalidad->nombre === 'Diurna';
+
+    [$niveles, $nivelesJs] = $this->datosNivelesPara($modalidad);
+
+    return view('prematricula.create', compact('niveles', 'nivelesJs', 'periodo', 'modalidad', 'esNocturna', 'esPlanNacional', 'esDiurna'));
+}
+
+/**
+ * Arma los niveles (con sus secciones/talleres/carreras) de una modalidad,
+ * tanto para el modelo Eloquent como para el JSON que usa el formulario.
+ * Compartido entre create() y ratificarForm().
+ *
+ * @return array{0: \Illuminate\Database\Eloquent\Collection, 1: \Illuminate\Support\Collection}
+ */
+private function datosNivelesPara(\App\Models\Modalidad $modalidad): array
+{
+    $esNocturna     = $modalidad->nombre === 'Nocturna';
+    $esPlanNacional = $modalidad->nombre === 'Plan Nacional';
 
     $niveles = Nivel::with([
         'secciones' => function($q) {
@@ -163,39 +190,27 @@ class PrematriculaController extends Controller
         }
     })->keyBy('id');
 
-    return view('prematricula.create', compact('niveles', 'nivelesJs', 'periodo', 'modalidad', 'esNocturna', 'esPlanNacional', 'esDiurna'));
+    return [$niveles, $nivelesJs];
 }
 
-    public function store(Request $request)
+/**
+ * Reglas de validación del formulario de matrícula/ratificación. Compartidas
+ * entre store() y ratificarStore(); solo cambia si el encargado es
+ * obligatorio (Nocturna + estudiante mayor de edad no lo necesita) y, al
+ * ratificar, la cédula debe poder repetirse consigo misma.
+ */
+private function reglasPrematricula(bool $esNocturnaMayor, ?int $ignorarEstudianteId = null): array
 {
-    $periodo = Periodo::activo();
-
-    if (!$periodo || !$periodo->estaAbierto()) {
-        return redirect()->route('prematricula.index')
-            ->with('error', 'El período de prematrícula no está activo.');
+    $reglaCedula = 'required|string|unique:estudiantes,cedula';
+    if ($ignorarEstudianteId) {
+        $reglaCedula .= ',' . $ignorarEstudianteId;
     }
-
-    // Determinar modalidad y edad ANTES de validar, para saber si los encargados son obligatorios
-    $modalidadSeleccionada = \App\Models\Modalidad::find($request->modalidad_id);
-    $esNocturnaReq  = $modalidadSeleccionada && $modalidadSeleccionada->nombre === 'Nocturna';
-
-    $edadEstudiante = null;
-    if ($request->filled('est_nacimiento')) {
-        try {
-            $edadEstudiante = \Carbon\Carbon::parse($request->est_nacimiento)->age;
-        } catch (\Exception $e) {
-            $edadEstudiante = null;
-        }
-    }
-
-    // Nocturna + mayor de edad (>=18): el estudiante es su propio contacto, no se piden encargados
-    $esNocturnaMayor = $esNocturnaReq && $edadEstudiante !== null && $edadEstudiante >= 18;
 
     // Reglas base del estudiante
     $reglas = [
         'est_nombre'       => 'required|string|max:100',
         'est_apellido'     => 'required|string|max:100',
-        'est_cedula'       => 'required|string|unique:estudiantes,cedula',
+        'est_cedula'       => $reglaCedula,
         'est_nacimiento'   => 'required|date',
         'est_genero'       => 'nullable|string',
         'est_nacionalidad' => 'nullable|string',
@@ -319,6 +334,36 @@ class PrematriculaController extends Controller
         'tut3_email'     => 'nullable|email',
         'tut3_ocupacion' => 'nullable|string',
     ]);
+
+    return $reglas;
+}
+
+    public function store(Request $request)
+{
+    $periodo = Periodo::activo();
+
+    if (!$periodo || !$periodo->estaAbierto()) {
+        return redirect()->route('prematricula.index')
+            ->with('error', 'El período de prematrícula no está activo.');
+    }
+
+    // Determinar modalidad y edad ANTES de validar, para saber si los encargados son obligatorios
+    $modalidadSeleccionada = \App\Models\Modalidad::find($request->modalidad_id);
+    $esNocturnaReq  = $modalidadSeleccionada && $modalidadSeleccionada->nombre === 'Nocturna';
+
+    $edadEstudiante = null;
+    if ($request->filled('est_nacimiento')) {
+        try {
+            $edadEstudiante = \Carbon\Carbon::parse($request->est_nacimiento)->age;
+        } catch (\Exception $e) {
+            $edadEstudiante = null;
+        }
+    }
+
+    // Nocturna + mayor de edad (>=18): el estudiante es su propio contacto, no se piden encargados
+    $esNocturnaMayor = $esNocturnaReq && $edadEstudiante !== null && $edadEstudiante >= 18;
+
+    $reglas = $this->reglasPrematricula($esNocturnaMayor);
 
     $validado = $request->validate($reglas);
 
@@ -690,5 +735,448 @@ public function reenviarCorreo(Prematricula $prematricula)
     }
 }
 
+/**
+ * Estudiantes matriculados por este docente en el período anterior que
+ * todavía no tienen una matrícula en el período activo: candidatos a
+ * "ratificar" en vez de matricular desde cero.
+ */
+public function ratificarIndex()
+{
+    $periodoActivo   = Periodo::activo();
+    $periodoAnterior = Periodo::anterior();
+
+    if (!$periodoActivo || !$periodoActivo->estaAbierto() || !$periodoAnterior) {
+        return redirect()->route('prematricula.index');
+    }
+
+    $yaMatriculadosIds = Prematricula::where('periodo_id', $periodoActivo->id)
+        ->pluck('estudiante_id');
+
+    $candidatos = Prematricula::where('periodo_id', $periodoAnterior->id)
+        ->where('user_id', Auth::id())
+        ->whereNotIn('estudiante_id', $yaMatriculadosIds)
+        ->with(['estudiante', 'nivel', 'modalidad'])
+        ->get();
+
+    return view('prematricula.ratificar_index', compact('candidatos', 'periodoAnterior', 'periodoActivo'));
+}
+
+/**
+ * Formulario de ratificación: reutiliza prematricula.create precargando
+ * los datos del estudiante/encargado vía flashInput (old()) y sugiriendo
+ * el siguiente nivel.
+ */
+public function ratificarForm(Estudiante $estudiante)
+{
+    $periodoActivo   = Periodo::activo();
+    $periodoAnterior = Periodo::anterior();
+
+    if (!$periodoActivo || !$periodoActivo->estaAbierto() || !$periodoAnterior) {
+        return redirect()->route('prematricula.index');
+    }
+
+    $prematriculaAnterior = Prematricula::where('estudiante_id', $estudiante->id)
+        ->where('periodo_id', $periodoAnterior->id)
+        ->latest()
+        ->with(['nivel', 'modalidad', 'tutor'])
+        ->first();
+
+    if (!$prematriculaAnterior) {
+        abort(404);
+    }
+
+    if ($prematriculaAnterior->user_id !== Auth::id()) {
+        abort(403, 'No tenés permiso para ratificar este estudiante.');
+    }
+
+    if (Prematricula::where('periodo_id', $periodoActivo->id)->where('estudiante_id', $estudiante->id)->exists()) {
+        return redirect()->route('prematricula.index')
+            ->with('info', 'Ese estudiante ya tiene una matrícula en el período activo.');
+    }
+
+    $modalidad = $prematriculaAnterior->modalidad;
+    if (!$modalidad || !$modalidad->activa) {
+        return view('prematricula.cerrado', [
+            'mensaje' => 'La modalidad del período anterior ya no está disponible. Contactá al administrador.',
+        ]);
+    }
+
+    /** @var \App\Models\User $usuario */
+    $usuario = Auth::user();
+    if (!$usuario->esAdmin() && !$usuario->modalidades->contains($modalidad->id)) {
+        return view('prematricula.cerrado', [
+            'mensaje' => 'No tenés acceso a la modalidad "' . $modalidad->nombre . '". Contactá al administrador.',
+        ]);
+    }
+
+    $esNocturna     = $modalidad->nombre === 'Nocturna';
+    $esPlanNacional = $modalidad->nombre === 'Plan Nacional';
+    $esDiurna       = $modalidad->nombre === 'Diurna';
+
+    [$niveles, $nivelesJs] = $this->datosNivelesPara($modalidad);
+
+    // Sugerir el siguiente nivel (7→8→9...) dentro de la misma modalidad, en el período activo.
+    $nivelSugeridoId = null;
+    if ($prematriculaAnterior->nivel) {
+        $siguienteNumero = (string) ((int) $prematriculaAnterior->nivel->numero + 1);
+        $nivelSugerido = $niveles->firstWhere('numero', $siguienteNumero);
+        $nivelSugeridoId = $nivelSugerido?->id;
+    }
+
+    // Precargar los datos del estudiante y su encargado principal como "old input",
+    // así el mismo formulario de create.blade.php los muestra sin tocar esa vista.
+    $tutorAnterior = $prematriculaAnterior->tutor;
+    [$provincia, $canton, $distrito, $poblado] = array_pad(explode(', ', $estudiante->direccion ?? '', 4), 4, null);
+
+    request()->session()->flashInput(array_filter([
+        'est_nombre'           => $estudiante->nombre,
+        'est_apellido'         => $estudiante->apellido,
+        'est_cedula'           => $estudiante->cedula,
+        'est_nacimiento'       => optional($estudiante->fecha_nacimiento)->format('Y-m-d'),
+        'est_genero'           => $estudiante->genero,
+        'est_nacionalidad'     => $estudiante->nacionalidad,
+        'est_email_mep'        => $estudiante->email_mep,
+        'est_email_personal'   => $estudiante->email_personal,
+        'est_telefono'         => $estudiante->telefono,
+        'est_provincia'        => $provincia,
+        'est_canton'           => $canton,
+        'est_distrito'         => $distrito,
+        'est_poblado'          => $poblado,
+        'est_adecuacion'       => $estudiante->adecuacion,
+        'colegio_procedencia'  => 'CTP Los Chiles',
+        'tut_nombre'           => $tutorAnterior?->nombre_completo,
+        'tut_relacion'         => $tutorAnterior?->relacion,
+        'tut_cedula'           => $tutorAnterior?->cedula,
+        'tut_telefono'         => $tutorAnterior?->telefono_principal,
+        'tut_telefono2'        => $tutorAnterior?->telefono_secundario,
+        'tut_email'            => $tutorAnterior?->email,
+        'tut_ocupacion'        => $tutorAnterior?->ocupacion,
+    ], fn($v) => $v !== null));
+
+    $accionFormulario   = route('prematricula.ratificar.store', $estudiante);
+    $estudianteRatificando = $estudiante;
+
+    return view('prematricula.create', compact(
+        'niveles', 'nivelesJs', 'modalidad', 'esNocturna', 'esPlanNacional', 'esDiurna',
+        'accionFormulario', 'estudianteRatificando', 'nivelSugeridoId'
+    ) + ['periodo' => $periodoActivo]);
+}
+
+public function ratificarStore(Request $request, Estudiante $estudiante)
+{
+    $periodo         = Periodo::activo();
+    $periodoAnterior = Periodo::anterior();
+
+    if (!$periodo || !$periodo->estaAbierto() || !$periodoAnterior) {
+        return redirect()->route('prematricula.index')
+            ->with('error', 'El período de prematrícula no está activo.');
+    }
+
+    $prematriculaAnterior = Prematricula::where('estudiante_id', $estudiante->id)
+        ->where('periodo_id', $periodoAnterior->id)
+        ->latest()
+        ->with(['tutores'])
+        ->first();
+
+    if (!$prematriculaAnterior) {
+        abort(404);
+    }
+    if ($prematriculaAnterior->user_id !== Auth::id()) {
+        abort(403, 'No tenés permiso para ratificar este estudiante.');
+    }
+
+    $modalidadSeleccionada = \App\Models\Modalidad::find($request->modalidad_id);
+    $esNocturnaReq  = $modalidadSeleccionada && $modalidadSeleccionada->nombre === 'Nocturna';
+
+    $edadEstudiante = null;
+    if ($request->filled('est_nacimiento')) {
+        try {
+            $edadEstudiante = \Carbon\Carbon::parse($request->est_nacimiento)->age;
+        } catch (\Exception $e) {
+            $edadEstudiante = null;
+        }
+    }
+    $esNocturnaMayor = $esNocturnaReq && $edadEstudiante !== null && $edadEstudiante >= 18;
+
+    $reglas   = $this->reglasPrematricula($esNocturnaMayor, ignorarEstudianteId: $estudiante->id);
+    $validado = $request->validate($reglas);
+
+    $emailMep = $validado['est_email_mep'] ?? null;
+    if (empty($emailMep)) {
+        $emailMep = $validado['est_cedula'] . '@est.mep.go.cr';
+    }
+
+    // Tutores del período anterior, ordenados por su puesto (principal/2/3), para reutilizarlos.
+    $tutoresAnteriorPorOrden = $prematriculaAnterior->tutores->keyBy(fn($t) => $t->pivot->orden);
+
+    [$estudianteActualizado, $tutor, $prematricula] = DB::transaction(function () use (
+        $validado, $esNocturnaMayor, $esNocturnaReq, $periodo, $modalidadSeleccionada,
+        $emailMep, $request, $estudiante, $tutoresAnteriorPorOrden
+    ) {
+        if (!empty($validado['seccion_id']) && !empty($validado['grupo_taller'])) {
+            $tallerGrupo = \App\Models\SeccionTaller::where('seccion_id', $validado['seccion_id'])
+                ->where('grupo', $validado['grupo_taller'])
+                ->lockForUpdate()
+                ->first();
+
+            if ($tallerGrupo && $tallerGrupo->estaLleno()) {
+                throw ValidationException::withMessages([
+                    'grupo_taller' => 'El grupo seleccionado ya no tiene cupos disponibles.',
+                ]);
+            }
+        }
+
+        if (!empty($validado['carrera_id'])) {
+            $carrera = \App\Models\Carrera::where('id', $validado['carrera_id'])
+                ->lockForUpdate()
+                ->first();
+
+            if ($carrera && $carrera->estaLlena()) {
+                throw ValidationException::withMessages([
+                    'carrera_id' => 'La carrera seleccionada ya no tiene cupos disponibles.',
+                ]);
+            }
+        }
+
+        $estudiante->update([
+            'nombre'                => $validado['est_nombre'],
+            'apellido'              => $validado['est_apellido'],
+            'cedula'                => $validado['est_cedula'],
+            'fecha_nacimiento'      => $validado['est_nacimiento'],
+            'genero'                => $validado['est_genero'] ?? null,
+            'nacionalidad'          => $validado['est_nacionalidad'] ?? null,
+            'adecuacion'            => $validado['est_adecuacion'] ?? null,
+            'tipo_discapacidad'     => $validado['est_tipo_discapacidad'] ?? null,
+            'boleta_ubicacion'      => $validado['est_boleta_ubicacion'] ?? null,
+            'nivel_funcionamiento'  => $validado['est_nivel_funcionamiento'] ?? null,
+            'email_mep'             => $emailMep,
+            'email_personal'        => $validado['est_email_personal'] ?? null,
+            'telefono'              => $validado['est_telefono'] ?? null,
+            'direccion' => implode(', ', array_filter([
+                $validado['est_provincia'],
+                $validado['est_canton'],
+                $validado['est_distrito'],
+                $validado['est_poblado'],
+            ])),
+        ]);
+
+        if (!$esNocturnaMayor) {
+            Familiar::where('estudiante_id', $estudiante->id)->delete();
+
+            if (!empty($validado['padre_nombre'])) {
+                Familiar::create([
+                    'estudiante_id'       => $estudiante->id,
+                    'tipo'                => 'padre',
+                    'nombre_completo'     => $validado['padre_nombre'],
+                    'cedula'              => $validado['padre_cedula'] ?? null,
+                    'telefono_principal'  => $validado['padre_telefono'] ?? null,
+                    'telefono_secundario' => $validado['padre_telefono2'] ?? null,
+                    'email'               => $validado['padre_email'] ?? null,
+                    'ocupacion'           => $validado['padre_ocupacion'] ?? null,
+                    'direccion'           => $validado['padre_direccion'] ?? null,
+                ]);
+            }
+            if (!empty($validado['madre_nombre'])) {
+                Familiar::create([
+                    'estudiante_id'       => $estudiante->id,
+                    'tipo'                => 'madre',
+                    'nombre_completo'     => $validado['madre_nombre'],
+                    'cedula'              => $validado['madre_cedula'] ?? null,
+                    'telefono_principal'  => $validado['madre_telefono'] ?? null,
+                    'telefono_secundario' => $validado['madre_telefono2'] ?? null,
+                    'email'               => $validado['madre_email'] ?? null,
+                    'ocupacion'           => $validado['madre_ocupacion'] ?? null,
+                    'direccion'           => $validado['madre_direccion'] ?? null,
+                ]);
+            }
+        }
+
+        $direccionEstudiante = implode(', ', array_filter([
+            $validado['est_provincia'], $validado['est_canton'], $validado['est_distrito'], $validado['est_poblado'],
+        ]));
+
+        $encargados = [];
+        if ($esNocturnaMayor) {
+            $encargados[1] = [
+                'nombre_completo'     => $validado['est_nombre'] . ' ' . $validado['est_apellido'],
+                'relacion'            => 'Estudiante mayor de edad',
+                'cedula'              => $validado['est_cedula'],
+                'telefono_principal'  => $validado['est_telefono'],
+                'telefono_secundario' => null,
+                'email'               => $validado['est_email_personal'],
+                'ocupacion'           => null,
+                'direccion'           => $direccionEstudiante,
+            ];
+            $principalNum = 1;
+        } else {
+            $direccionTutor = implode(', ', array_filter([
+                $validado['tut_provincia'], $validado['tut_canton'], $validado['tut_distrito'], $validado['tut_poblado'],
+            ]));
+
+            $encargados[1] = [
+                'nombre_completo' => $validado['tut_nombre'], 'relacion' => $validado['tut_relacion'],
+                'cedula' => $validado['tut_cedula'], 'telefono_principal' => $validado['tut_telefono'],
+                'telefono_secundario' => $validado['tut_telefono2'] ?? null, 'email' => $validado['tut_email'],
+                'ocupacion' => $validado['tut_ocupacion'] ?? null, 'direccion' => $direccionTutor,
+            ];
+            if (!empty($validado['tut2_nombre'])) {
+                $encargados[2] = [
+                    'nombre_completo' => $validado['tut2_nombre'], 'relacion' => $validado['tut2_relacion'] ?? null,
+                    'cedula' => $validado['tut2_cedula'] ?? null, 'telefono_principal' => $validado['tut2_telefono'] ?? null,
+                    'telefono_secundario' => $validado['tut2_telefono2'] ?? null, 'email' => $validado['tut2_email'] ?? null,
+                    'ocupacion' => $validado['tut2_ocupacion'] ?? null, 'direccion' => $direccionTutor,
+                ];
+            }
+            if (!empty($validado['tut3_nombre'])) {
+                $encargados[3] = [
+                    'nombre_completo' => $validado['tut3_nombre'], 'relacion' => $validado['tut3_relacion'] ?? null,
+                    'cedula' => $validado['tut3_cedula'] ?? null, 'telefono_principal' => $validado['tut3_telefono'] ?? null,
+                    'telefono_secundario' => $validado['tut3_telefono2'] ?? null, 'email' => $validado['tut3_email'] ?? null,
+                    'ocupacion' => $validado['tut3_ocupacion'] ?? null, 'direccion' => $direccionTutor,
+                ];
+            }
+            $principalNum = (int) $validado['principal'];
+        }
+
+        $esPlanNacional = $modalidadSeleccionada && $modalidadSeleccionada->nombre === 'Plan Nacional';
+
+        if ($esPlanNacional) {
+            $request->validate([
+                'est_tipo_discapacidad'    => 'required|string|max:150',
+                'est_boleta_ubicacion'     => 'required|in:Sí,No',
+                'est_nivel_funcionamiento' => 'required|string',
+            ]);
+        } elseif (!$esNocturnaReq) {
+            $request->validate(['est_adecuacion' => 'required|string']);
+        }
+
+        $nivelSeleccionado = \App\Models\Nivel::find($validado['nivel_id']);
+        $esBajoCiclo = $nivelSeleccionado && in_array((string) $nivelSeleccionado->numero, ['7', '8', '9']);
+
+        if ($esPlanNacional) {
+            $validado = array_merge($validado, $request->validate(['seccion_id' => 'required|exists:secciones,id']));
+            if ($esBajoCiclo) {
+                $validado = array_merge($validado, $request->validate(['tecnica_1' => 'required|string|max:150']));
+            } else {
+                $validado = array_merge($validado, $request->validate(['formacion_vocacional' => 'required|string|max:150']));
+            }
+        }
+
+        // Reutilizar (actualizándolos) los tutores del período anterior por puesto;
+        // crear uno nuevo solo si ese puesto no existía antes.
+        $tutoresCreados = [];
+        foreach ($encargados as $numero => $datosEncargado) {
+            $existente = $tutoresAnteriorPorOrden->get($numero);
+            if ($existente) {
+                $existente->update($datosEncargado);
+                $tutoresCreados[$numero] = $existente;
+            } else {
+                $tutoresCreados[$numero] = Tutor::create(array_merge($datosEncargado, ['user_id' => Auth::id()]));
+            }
+        }
+
+        $tutor = $tutoresCreados[$principalNum] ?? $tutoresCreados[1];
+
+        $prematricula = Prematricula::create([
+            'codigo'                => Prematricula::generarCodigo(),
+            'user_id'               => Auth::id(),
+            'periodo_id'            => $periodo->id,
+            'estudiante_id'         => $estudiante->id,
+            'tutor_id'              => $tutor->id,
+            'nivel_id'              => $validado['nivel_id'],
+            'seccion_id'            => $validado['seccion_id'] ?? null,
+            'grupo_taller'          => $validado['grupo_taller'] ?? null,
+            'colegio_procedencia'   => $validado['colegio_procedencia'],
+            'anio_cursado_anterior' => $validado['anio_cursado_anterior'],
+            'modalidad_id'          => $validado['modalidad_id'],
+            'carrera_id'            => $validado['carrera_id'] ?? null,
+            'taller_segunda_opcion_id'  => $validado['taller_segunda_opcion_id'] ?? null,
+            'carrera_segunda_opcion_id' => $validado['carrera_segunda_opcion_id'] ?? null,
+            'taller_tercera_opcion_id'  => $validado['taller_tercera_opcion_id'] ?? null,
+            'taller_cuarta_opcion_id'   => $validado['taller_cuarta_opcion_id'] ?? null,
+            'carrera_tercera_opcion_id' => $validado['carrera_tercera_opcion_id'] ?? null,
+            'carrera_cuarta_opcion_id'  => $validado['carrera_cuarta_opcion_id'] ?? null,
+            'tecnica_1'            => ($esPlanNacional && $esBajoCiclo) ? ($validado['tecnica_1'] ?? null) : null,
+            'tecnica_2'            => ($esPlanNacional && $esBajoCiclo) ? ($validado['tecnica_2'] ?? null) : null,
+            'formacion_vocacional' => ($esPlanNacional && !$esBajoCiclo) ? ($validado['formacion_vocacional'] ?? null) : null,
+            'tecnica_3'            => ($esPlanNacional && !$esBajoCiclo) ? ($validado['tecnica_alto'] ?? null) : null,
+            'seguimiento_pn'       => ($esPlanNacional && !$esBajoCiclo) ? ($validado['seguimiento_pn'] ?? null) : null,
+        ]);
+
+        foreach ($tutoresCreados as $numero => $tutorCreado) {
+            $prematricula->tutores()->attach($tutorCreado->id, [
+                'principal' => $numero === $principalNum,
+                'orden'     => $numero,
+            ]);
+        }
+
+        return [$estudiante->fresh(), $tutor, $prematricula];
+    });
+
+    if ($modalidadSeleccionada && $modalidadSeleccionada->nombre === 'Plan Nacional') {
+        $request->validate([
+            'doc_pase' => 'required_without:fisico_pase|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        ]);
+    }
+
+    $esPlanNacional = $modalidadSeleccionada && $modalidadSeleccionada->nombre === 'Plan Nacional';
+
+    $mapaDocumentos = [
+        'doc_cedula'           => ['tipo' => 'cedula_estudiante', 'fisico' => 'fisico_cedula'],
+        'doc_notas'            => ['tipo' => 'notas', 'fisico' => 'fisico_notas'],
+        'doc_foto'             => ['tipo' => 'foto', 'fisico' => 'fisico_foto'],
+        'doc_cedula_encargado' => ['tipo' => 'cedula_encargado', 'fisico' => 'fisico_cedula_encargado'],
+        'doc_prueba_admision'  => ['tipo' => 'prueba_admision', 'fisico' => 'fisico_prueba_admision'],
+    ];
+    if ($esPlanNacional) {
+        $mapaDocumentos['doc_pase'] = ['tipo' => 'pase', 'fisico' => 'fisico_pase'];
+    }
+
+    foreach ($mapaDocumentos as $campoFormulario => $info) {
+        $esFisico = $info['fisico'] && $request->boolean($info['fisico']);
+
+        if ($request->hasFile($campoFormulario)) {
+            $archivo = $request->file($campoFormulario);
+            $ruta = $archivo->store('documentos/' . $prematricula->id, 'local');
+            \App\Models\Documento::create([
+                'prematricula_id' => $prematricula->id, 'tipo' => $info['tipo'],
+                'entregado_fisico' => false, 'nombre_original' => $archivo->getClientOriginalName(), 'ruta' => $ruta,
+            ]);
+        } elseif ($esFisico) {
+            \App\Models\Documento::create([
+                'prematricula_id' => $prematricula->id, 'tipo' => $info['tipo'],
+                'entregado_fisico' => true, 'nombre_original' => null, 'ruta' => null,
+            ]);
+        }
+    }
+
+    $rutaPdf = null;
+    try {
+        $prematricula->load(['estudiante', 'estudiante.familiares', 'tutor', 'tutores', 'documentos', 'nivel', 'seccion', 'periodo', 'modalidad', 'carrera', 'user']);
+        $rutaPdf = \App\Services\BoletaPdfBuilder::generar($prematricula);
+    } catch (\Exception $e) {
+        // Si el PDF falla, igual seguimos e intentamos mandar el correo sin adjunto
+    }
+
+    try {
+        $destinatarios = collect([$tutor->email]);
+        if (!empty($estudianteActualizado->email_mep)) {
+            $destinatarios->push($estudianteActualizado->email_mep);
+        }
+        if (!empty($estudianteActualizado->email_personal)) {
+            $destinatarios->push($estudianteActualizado->email_personal);
+        }
+        $destinatarios = $destinatarios->filter()->unique()->values();
+
+        Mail::to($destinatarios->first())
+            ->cc($destinatarios->slice(1)->all())
+            ->send(new PrematriculaRecibida($prematricula, $rutaPdf));
+    } catch (\Exception $e) {
+        // Si el correo falla no interrumpimos el flujo
+    }
+
+    return redirect()->route('prematricula.index')
+        ->with('success', '¡Matrícula ratificada correctamente! Código: ' . $prematricula->codigo . '.');
+}
 
 }

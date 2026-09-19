@@ -4,12 +4,20 @@
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 Mis Matrículas
             </h2>
-            @if ($periodo && $periodo->estaAbierto())
-                <a href="{{ route('prematricula.create') }}"
-                    class="inline-block bg-blue-700 hover:bg-blue-800 text-white font-medium px-4 py-2 rounded-md text-sm">
-                    + Nueva Matrícula
-                </a>
-            @endif
+            <div class="flex items-center gap-3">
+                @if (isset($pendientesRatificar) && $pendientesRatificar > 0)
+                    <a href="{{ route('prematricula.ratificar.index') }}"
+                        class="inline-block bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-md text-sm">
+                        Ratificar matrículas ({{ $pendientesRatificar }})
+                    </a>
+                @endif
+                @if ($periodo && $periodo->estaAbierto())
+                    <a href="{{ route('prematricula.create') }}"
+                        class="inline-block bg-blue-700 hover:bg-blue-800 text-white font-medium px-4 py-2 rounded-md text-sm">
+                        + Nueva Matrícula
+                    </a>
+                @endif
+            </div>
         </div>
     </x-slot>
 

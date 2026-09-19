@@ -41,6 +41,22 @@ class Periodo extends Model
     }
 
     /**
+     * Devuelve el período más reciente antes del activo (para "ratificar"
+     * estudiantes que ya estaban matriculados el período anterior).
+     */
+    public static function anterior(): ?self
+    {
+        $activo = self::activo();
+        if (!$activo) {
+            return null;
+        }
+
+        return self::where('id', '!=', $activo->id)
+            ->orderByDesc('fecha_inicio')
+            ->first();
+    }
+
+    /**
      * Verifica si el período está abierto para recibir prematrículas.
      */
     public function estaAbierto(): bool
