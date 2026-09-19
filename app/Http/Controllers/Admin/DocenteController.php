@@ -25,12 +25,13 @@ class DocenteController extends Controller
             'rol'      => 'required|in:docente,admin',
         ]);
 
-        User::create([
+        $user = User::create([
             'name'     => $validado['name'],
             'email'    => $validado['email'],
             'password' => Hash::make($validado['password']),
-            'rol'      => $validado['rol'],
         ]);
+        $user->rol = $validado['rol'];
+        $user->save();
 
         $tipoLabel = $validado['rol'] === 'admin' ? 'Administrador' : 'Docente';
 

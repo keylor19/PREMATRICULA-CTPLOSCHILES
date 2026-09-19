@@ -13,6 +13,8 @@ use App\Mail\PrematriculaRecibida;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 
@@ -320,30 +322,43 @@ class PrematriculaController extends Controller
 
     $validado = $request->validate($reglas);
 
-    // Verificar cupo disponible — solo para Diurna (secciones y talleres)
-    if (!empty($validado['seccion_id']) && !empty($validado['grupo_taller'])) {
-        $tallerGrupo = \App\Models\SeccionTaller::where('seccion_id', $validado['seccion_id'])
-            ->where('grupo', $validado['grupo_taller'])
-            ->first();
-
-        if ($tallerGrupo && $tallerGrupo->estaLleno()) {
-            return back()->withInput()
-                ->withErrors(['grupo_taller' => 'El grupo seleccionado ya no tiene cupos disponibles.']);
-        }
-    }
-
-    // Verificar cupo disponible — solo para Nocturna (carreras)
-    if (!empty($validado['carrera_id'])) {
-        $carrera = \App\Models\Carrera::find($validado['carrera_id']);
-        if ($carrera && $carrera->estaLlena()) {
-            return back()->withInput()
-                ->withErrors(['carrera_id' => 'La carrera seleccionada ya no tiene cupos disponibles.']);
-        }
-    }
-
     $emailMep = $validado['est_email_mep'] ?? null;
     if (empty($emailMep)) {
         $emailMep = $validado['est_cedula'] . '@est.mep.go.cr';
+    }
+
+    // Todo lo que sigue (verificación de cupo + creación de los registros relacionados)
+    // se ejecuta en una transacción con bloqueo de fila sobre el taller/carrera elegido,
+    // para evitar que dos solicitudes simultáneas reserven el mismo último cupo (TOCTOU).
+    [$estudiante, $tutor, $prematricula] = DB::transaction(function () use (
+        $validado, $esNocturnaMayor, $esNocturnaReq, $periodo, $modalidadSeleccionada,
+        $emailMep, $request
+    ) {
+    // Verificar (y bloquear) cupo disponible — solo para Diurna (secciones y talleres)
+    if (!empty($validado['seccion_id']) && !empty($validado['grupo_taller'])) {
+        $tallerGrupo = \App\Models\SeccionTaller::where('seccion_id', $validado['seccion_id'])
+            ->where('grupo', $validado['grupo_taller'])
+            ->lockForUpdate()
+            ->first();
+
+        if ($tallerGrupo && $tallerGrupo->estaLleno()) {
+            throw ValidationException::withMessages([
+                'grupo_taller' => 'El grupo seleccionado ya no tiene cupos disponibles.',
+            ]);
+        }
+    }
+
+    // Verificar (y bloquear) cupo disponible — solo para Nocturna (carreras)
+    if (!empty($validado['carrera_id'])) {
+        $carrera = \App\Models\Carrera::where('id', $validado['carrera_id'])
+            ->lockForUpdate()
+            ->first();
+
+        if ($carrera && $carrera->estaLlena()) {
+            throw ValidationException::withMessages([
+                'carrera_id' => 'La carrera seleccionada ya no tiene cupos disponibles.',
+            ]);
+        }
     }
 
     $estudiante = Estudiante::create([
@@ -546,11 +561,16 @@ class PrematriculaController extends Controller
         ]);
     }
 
-    if ($esPlanNacional) {
+    return [$estudiante, $tutor, $prematricula];
+    });
+
+    if ($modalidadSeleccionada && $modalidadSeleccionada->nombre === 'Plan Nacional') {
         $request->validate([
             'doc_pase' => 'required_without:fisico_pase|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ]);
     }
+
+    $esPlanNacional = $modalidadSeleccionada && $modalidadSeleccionada->nombre === 'Plan Nacional';
 
     $mapaDocumentos = [
         'doc_cedula'           => ['tipo' => 'cedula_estudiante', 'fisico' => 'fisico_cedula'],

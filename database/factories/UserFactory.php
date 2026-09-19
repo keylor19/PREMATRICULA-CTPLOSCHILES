@@ -42,4 +42,24 @@ class UserFactory extends Factory
             'email_verified_at' => null,
         ]);
     }
+
+    /**
+     * Indicate that the user is an administrator.
+     */
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'rol' => 'admin',
+        ]);
+    }
+
+    /**
+     * Indicate that the user is a docente (default role).
+     */
+    public function docente(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'rol' => 'docente',
+        ]);
+    }
 }

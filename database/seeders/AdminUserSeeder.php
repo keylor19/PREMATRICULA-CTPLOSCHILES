@@ -23,9 +23,10 @@ class AdminUserSeeder extends Seeder
             [
                 'name' => 'Admin CTP',
                 'password' => Hash::make($passwordPlano),
-                'rol' => 'admin',
             ]
         );
+        $usuario->rol = 'admin';
+        $usuario->save();
 
         $this->command->info("Usuario admin listo: {$usuario->email} (id: {$usuario->id})");
         $this->command->warn("Contraseña temporal: {$passwordPlano} — cambiala después de tu primer login.");
