@@ -763,6 +763,17 @@
     const esNocturna = {{ $esNocturna ? 'true' : 'false' }};
     const esPlanNacional = {{ $esPlanNacional ? 'true' : 'false' }};
 
+    // Direcciones ya cargadas (por un error de validación anterior, o al
+    // ratificar una matrícula): si vienen, se respetan en vez de forzar
+    // siempre "Los Chiles" por defecto.
+    @php
+        $direccionesPreviasArr = [
+            'est' => ['provincia' => old('est_provincia'), 'canton' => old('est_canton'), 'distrito' => old('est_distrito')],
+            'tut' => ['provincia' => old('tut_provincia'), 'canton' => old('tut_canton'), 'distrito' => old('tut_distrito')],
+        ];
+    @endphp
+    const direccionesPrevias = @json($direccionesPreviasArr, JSON_UNESCAPED_UNICODE);
+
     // ===== Copiar datos de Padre/Madre a un encargado legal =====
     function copiarDatosFamiliar(numeroEncargado, tipo) {
         const sufijo = numeroEncargado === 1 ? '' : numeroEncargado;
@@ -1071,15 +1082,21 @@
     function seleccionarLosChiles(prefix) {
         const provinciaSelect = document.getElementById(prefix + '_provincia');
         if (!provinciaSelect) return;
-        provinciaSelect.value = 'Alajuela';
-        cargarCantones(prefix, 'Alajuela');
+
+        const previa = direccionesPrevias[prefix] || {};
+        const provincia = previa.provincia && geo[previa.provincia] ? previa.provincia : 'Alajuela';
+
+        provinciaSelect.value = provincia;
+        cargarCantones(prefix, provincia);
 
         const cantonSelect = document.getElementById(prefix + '_canton');
-        cantonSelect.value = 'Los Chiles';
-        cargarDistritos(prefix, 'Los Chiles');
+        const canton = previa.canton && geo[provincia] && geo[provincia][previa.canton] ? previa.canton : 'Los Chiles';
+        cantonSelect.value = canton;
+        cargarDistritos(prefix, canton);
 
         const distritoSelect = document.getElementById(prefix + '_distrito');
-        distritoSelect.value = 'Los Chiles';
+        const opcionesDistrito = (geo[provincia] && geo[provincia][canton]) || [];
+        distritoSelect.value = (previa.distrito && opcionesDistrito.includes(previa.distrito)) ? previa.distrito : 'Los Chiles';
     }
 
     function copiarDireccionEstudiante(activar) {

@@ -107,6 +107,22 @@ class RatificacionTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_formulario_respeta_la_direccion_anterior_del_estudiante_en_vez_de_forzar_los_chiles(): void
+    {
+        $e = $this->prepararEscenario();
+        // Los Chiles es el valor por defecto del formulario; un estudiante de
+        // otra provincia no debe terminar viendo "San Antonio" con la
+        // dirección pisada por el default.
+        $e['estudiante']->update(['direccion' => 'San José, Escazú, San Antonio, 100m norte del parque']);
+
+        $response = $this->actingAs($e['docente'])->get('/prematricula/ratificar/' . $e['estudiante']->id);
+
+        $response->assertOk();
+        $response->assertSee('"provincia":"San José"', false);
+        $response->assertSee('"canton":"Escazú"', false);
+        $response->assertSee('"distrito":"San Antonio"', false);
+    }
+
     public function test_formulario_sugiere_el_siguiente_nivel_y_precarga_los_datos_existentes(): void
     {
         $e = $this->prepararEscenario();
