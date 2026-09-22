@@ -41,8 +41,20 @@ class User extends Authenticatable
 
     public function esAdmin(): bool
     {
-        return $this->rol === 'admin';
+        return in_array($this->rol, ['admin', 'superadmin'], true);
     }
+
+    /**
+     * El superadmin tiene, además de todo lo de admin, acceso a acciones
+     * irreversibles (por ahora, borrar un período de matrícula). Se asigna
+     * manualmente vía `php artisan app:hacer-super-admin`, nunca desde el
+     * formulario de gestión de docentes.
+     */
+    public function esSuperAdmin(): bool
+    {
+        return $this->rol === 'superadmin';
+    }
+
     public function modalidades()
 {
     return $this->belongsToMany(Modalidad::class, 'docente_modalidad');

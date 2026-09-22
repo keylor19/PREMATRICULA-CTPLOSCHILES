@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'admin' => \App\Http\Middleware\EsAdmin::class,
+            'superadmin' => \App\Http\Middleware\EsSuperAdmin::class,
         ]);
 
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);

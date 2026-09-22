@@ -92,7 +92,11 @@
                                 <td class="px-4 py-3 text-sm text-gray-900">{{ $usuario->name }}</td>
                                 <td class="px-4 py-3 text-sm text-gray-600">{{ $usuario->email }}</td>
                                 <td class="px-4 py-3 text-sm">
-                                    @if ($usuario->rol === 'admin')
+                                    @if ($usuario->rol === 'superadmin')
+                                        <span class="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                                            Superadmin
+                                        </span>
+                                    @elseif ($usuario->rol === 'admin')
                                         <span class="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
                                             Administrador
                                         </span>
@@ -104,7 +108,11 @@
                                 </td>
                                 <td class="px-4 py-3 text-sm text-gray-400">{{ $usuario->created_at->format('d/m/Y') }}</td>
                                 <td class="px-4 py-3 text-right">
-                                    @if ($usuario->id !== auth()->id())
+                                    @if ($usuario->id === auth()->id())
+                                        <span class="text-xs text-gray-300">Tu cuenta</span>
+                                    @elseif ($usuario->rol === 'superadmin' && !Auth::user()->esSuperAdmin())
+                                        <span class="text-xs text-gray-300">Solo un superadmin puede eliminarla</span>
+                                    @else
                                         <form method="POST" action="{{ route('admin.docentes.destroy', $usuario) }}"
                                             onsubmit="return confirm('¿Seguro que querés eliminar esta cuenta?')">
                                             @csrf
@@ -113,8 +121,6 @@
                                                 Eliminar
                                             </button>
                                         </form>
-                                    @else
-                                        <span class="text-xs text-gray-300">Tu cuenta</span>
                                     @endif
                                 </td>
                             </tr>

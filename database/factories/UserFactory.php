@@ -62,4 +62,14 @@ class UserFactory extends Factory
             'rol' => 'docente',
         ]);
     }
+
+    /**
+     * Indicate that the user is the superadmin (único rol que puede borrar períodos).
+     */
+    public function superAdmin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'rol' => 'superadmin',
+        ]);
+    }
 }

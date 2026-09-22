@@ -44,6 +44,10 @@ class DocenteController extends Controller
             return back()->with('error', 'No podés eliminar tu propia cuenta.');
         }
 
+        if ($user->esSuperAdmin() && !Auth::user()->esSuperAdmin()) {
+            return back()->with('error', 'Solo un superadmin puede eliminar una cuenta de superadmin.');
+        }
+
         $user->delete();
         return back()->with('success', 'Cuenta eliminada correctamente.');
     }

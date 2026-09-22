@@ -159,14 +159,16 @@
                                                     </button>
                                                 </form>
                                             @endif
-                                            <form method="POST" action="{{ route('admin.periodos.destroy', $periodo) }}"
-                                                onsubmit="return confirm('¿Seguro? Solo se puede eliminar si no tiene prematrículas.')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="text-xs text-red-500 hover:text-red-700">
-                                                    Eliminar
-                                                </button>
-                                            </form>
+                                            @if (Auth::user()->esSuperAdmin())
+                                                <form method="POST" action="{{ route('admin.periodos.destroy', $periodo) }}"
+                                                    onsubmit="return confirm('¿Seguro? Solo se puede eliminar si no tiene prematrículas.')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="text-xs text-red-500 hover:text-red-700">
+                                                        Eliminar
+                                                    </button>
+                                                </form>
+                                            @endif
                                         @endif
                                     </div>
                                 </td>

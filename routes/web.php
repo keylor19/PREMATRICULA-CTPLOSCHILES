@@ -82,7 +82,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/periodos/{periodo}/activar', [\App\Http\Controllers\Admin\PeriodoController::class, 'activar'])->name('periodos.activar');
     Route::post('/periodos/{periodo}/reabrir', [\App\Http\Controllers\Admin\PeriodoController::class, 'reabrir'])->name('periodos.reabrir');
     Route::post('/periodos/{periodo}/cerrar', [\App\Http\Controllers\Admin\PeriodoController::class, 'cerrar'])->name('periodos.cerrar');
-    Route::delete('/periodos/{periodo}', [\App\Http\Controllers\Admin\PeriodoController::class, 'destroy'])->name('periodos.destroy');
+    Route::delete('/periodos/{periodo}', [\App\Http\Controllers\Admin\PeriodoController::class, 'destroy'])
+        ->middleware('superadmin')
+        ->name('periodos.destroy');
 
     // Modalidades
     Route::get('/modalidades', [\App\Http\Controllers\Admin\ModalidadController::class, 'index'])->name('modalidades.index');
