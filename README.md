@@ -43,7 +43,13 @@ npm run build          # o `npm run dev` en desarrollo
 php artisan serve
 ```
 
-El seeder de admin crea `admin@ctp.local` con una contraseña temporal — cambiala desde el sistema apenas entres por primera vez. Después necesitás crear al menos un período de matrícula activo (`/admin/periodos`) y configurar niveles/secciones/talleres o carreras (`/admin/configuracion`) antes de que los docentes puedan matricular.
+El seeder de admin crea `admin@ctp.local`. Si definiste `ADMIN_INITIAL_PASSWORD` en tu `.env` antes de sembrar, esa es su contraseña; si no, usa una genérica y te avisa en pantalla que la cambiés apenas entres. Después necesitás crear al menos un período de matrícula activo (`/admin/periodos`) y configurar niveles/secciones/talleres o carreras (`/admin/configuracion`) antes de que los docentes puedan matricular.
+
+Este `admin@ctp.local` arranca como admin normal. Para que además pueda borrar períodos de matrícula (acción irreversible, reservada al dueño del sistema), promovelo a superadmin:
+
+```bash
+php artisan app:hacer-super-admin admin@ctp.local
+```
 
 ## Variables de entorno relevantes
 
@@ -51,6 +57,7 @@ El seeder de admin crea `admin@ctp.local` con una contraseña temporal — cambi
 - `MAIL_*`: SMTP para el envío automático del correo de confirmación de cada matrícula (con el PDF de la boleta adjunto). En desarrollo/pruebas usá `MAIL_MAILER=log` para no enviar correos reales.
 - `APP_DEBUG`: **debe quedar en `false` en producción** — con `true` expone trazas de error y detalles internos.
 - `SESSION_SECURE_COOKIE`: poné `true` si el sitio corre bajo HTTPS (recomendado en producción).
+- `ADMIN_INITIAL_PASSWORD`: contraseña real que usa `AdminUserSeeder` para `admin@ctp.local` al sembrar. Se define solo en tu `.env` local/del servidor — **nunca se escribe en el código ni se sube al repo** (el repo es público). Si la dejás sin definir, el seeder usa una contraseña genérica que hay que cambiar manualmente después.
 
 ## Pruebas
 
